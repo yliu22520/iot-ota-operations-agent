@@ -1,0 +1,9 @@
+<template>
+  <el-alert
+    title="当前页面展示的是模拟器数据，不代表真实生产设备或平台状态。"
+    type="warning"
+    show-icon
+    :closable="false"
+    class="simulated-banner"
+  />
+</template>

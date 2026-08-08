@@ -1,0 +1,25 @@
+:root { color: #1f2937; font-family: Inter, "Microsoft YaHei", sans-serif; background: #f4f6f8; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 1024px; }
+.app-shell { min-height: 100vh; }
+.app-header { align-items: center; background: #14213d; color: white; display: flex; justify-content: space-between; padding: 18px 6vw; }
+.app-header h1 { font-size: 20px; margin: 2px 0 0; }
+.operator-menu { align-items: center; display: flex; gap: 12px; }
+.operator-menu .el-button { color: #dce7ff; }
+.eyebrow { color: #7892c7; font-size: 11px; font-weight: 700; letter-spacing: .14em; margin: 0; }
+.app-header .eyebrow { color: #a9c1ff; }
+.workbench-nav, .page-content { margin: 0 auto; max-width: 1280px; }
+.workbench-nav { padding: 22px 0 0; }
+.workbench-nav a { color: #2859b8; font-weight: 600; margin-right: 20px; text-decoration: none; }
+.page-content { padding: 18px 0 40px; }
+.simulated-banner { margin-bottom: 22px; }
+.page-heading { align-items: flex-start; display: flex; justify-content: space-between; margin: 22px 0; }
+.page-heading h2 { font-size: 28px; margin: 4px 0 8px; }
+.muted { color: #6b7280; font-size: 13px; }
+.login-page { display: grid; min-height: 65vh; place-items: center; }
+.login-card { width: 420px; }
+.full-width { width: 100%; }
+.facts { display: grid; gap: 10px 18px; grid-template-columns: 100px 1fr; margin: 0; }
+.facts dt { color: #6b7280; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.detail-card { margin-top: 16px; }
