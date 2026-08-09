@@ -8,7 +8,9 @@
 
 **Tech Stack:** Java 17, Spring Boot 3.4.x, Spring Security Session, Spring Data JPA, Flyway, PostgreSQL 16/pgvector, Testcontainers, ArchUnit, Vue 3, TypeScript, Vite, Pinia, Axios, Element Plus, Vitest。
 
-> **实施状态：** 工程、接口、模拟数据、工作台、容器配置和本地可运行验证已完成；Testcontainers 集成测试已接入，但当前机器因 Docker Desktop 守护进程不可用而无法启动容器。
+> **实施状态：** 已完成。工程、接口、模拟数据、工作台、容器配置、普通测试和 Testcontainers 系统测试均已验证。
+
+> **归档记录（2026-08-10）：** Issue #2 验收项全部完成，GitHub Issue 已同步完成说明并关闭；后续诊断、知识库和重试能力另行跟踪。
 
 ---
 
