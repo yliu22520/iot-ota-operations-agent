@@ -14,6 +14,7 @@ body { margin: 0; min-width: 1024px; }
 .page-content { padding: 18px 0 40px; }
 .simulated-banner { margin-bottom: 22px; }
 .page-heading { align-items: flex-start; display: flex; justify-content: space-between; margin: 22px 0; }
+.heading-actions { align-items: center; display: flex; gap: 12px; }
 .page-heading h2 { font-size: 28px; margin: 4px 0 8px; }
 .muted { color: #6b7280; font-size: 13px; }
 .login-page { display: grid; min-height: 65vh; place-items: center; }
@@ -23,3 +24,12 @@ body { margin: 0; min-width: 1024px; }
 .facts dt { color: #6b7280; }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
 .detail-card { margin-top: 16px; }
+.diagnosis-card { margin: 18px 0; }
+.card-heading, .diagnosis-summary { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.diagnosis-progress { align-items: center; color: #4b5563; display: flex; gap: 8px; }
+.loading-dot { animation: pulse 1s infinite; font-size: 24px; line-height: 12px; }
+@keyframes pulse { 50% { opacity: .35; } }
+.diagnosis-report-block { margin-top: 18px; }
+.diagnosis-report-block h3 { font-size: 16px; margin: 0 0 8px; }
+.diagnosis-report-block ul { line-height: 1.7; margin: 0; padding-left: 22px; }
+.diagnosis-report-block code { color: #2859b8; }

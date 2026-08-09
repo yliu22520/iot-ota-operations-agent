@@ -1,0 +1,130 @@
+package com.yliu22520.iotota.diagnosis;
+
+import com.yliu22520.iotota.simulator.Device;
+import com.yliu22520.iotota.simulator.DeviceRepository;
+import com.yliu22520.iotota.simulator.FailureLog;
+import com.yliu22520.iotota.simulator.FailureLogRepository;
+import com.yliu22520.iotota.simulator.FirmwareVersion;
+import com.yliu22520.iotota.simulator.FirmwareVersionRepository;
+import com.yliu22520.iotota.simulator.UpgradeTask;
+import com.yliu22520.iotota.simulator.UpgradeTaskRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class SimulatorDiagnosticToolset implements DiagnosticToolset {
+
+    private static final String SOURCE_TASK = "simulator.upgrade-task";
+    private static final String SOURCE_DEVICE = "simulator.device-state";
+    private static final String SOURCE_FIRMWARE = "simulator.firmware-catalogue";
+    private static final String SOURCE_COMPATIBILITY = "backend.version-compatibility-rule";
+    private static final String SOURCE_LOG = "simulator.failure-log";
+
+    private final UpgradeTaskRepository upgradeTaskRepository;
+    private final DeviceRepository deviceRepository;
+    private final FirmwareVersionRepository firmwareVersionRepository;
+    private final FailureLogRepository failureLogRepository;
+    private final VersionCompatibilityRule compatibilityRule;
+    private final Clock clock;
+
+    public SimulatorDiagnosticToolset(UpgradeTaskRepository upgradeTaskRepository,
+                                      DeviceRepository deviceRepository,
+                                      FirmwareVersionRepository firmwareVersionRepository,
+                                      FailureLogRepository failureLogRepository,
+                                      VersionCompatibilityRule compatibilityRule,
+                                      Clock clock) {
+        this.upgradeTaskRepository = upgradeTaskRepository;
+        this.deviceRepository = deviceRepository;
+        this.firmwareVersionRepository = firmwareVersionRepository;
+        this.failureLogRepository = failureLogRepository;
+        this.compatibilityRule = compatibilityRule;
+        this.clock = clock;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<UpgradeTaskToolData> getUpgradeTask(UUID upgradeTaskId) {
+        Instant observedAt = Instant.now(clock);
+        return upgradeTaskRepository.findById(upgradeTaskId)
+                .map(task -> StructuredToolResult.success("getUpgradeTask", "upgrade-task:" + task.getId(),
+                        SOURCE_TASK, observedAt, new UpgradeTaskToolData(task.getId(), task.getStatus().name(),
+                                task.getFailureCode(), task.getFailureSummary(), task.getFailedAt(),
+                                task.getDevice().getId(), task.getTargetFirmwareVersion().getId())))
+                .orElseGet(() -> StructuredToolResult.failure("getUpgradeTask", "upgrade-task:" + upgradeTaskId,
+                        SOURCE_TASK, observedAt, "Upgrade task not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<DeviceStateToolData> getDeviceState(String deviceId) {
+        Instant observedAt = Instant.now(clock);
+        return deviceRepository.findById(deviceId)
+                .map(device -> StructuredToolResult.success("getDeviceState", "device:" + device.getId(),
+                        SOURCE_DEVICE, observedAt, toDeviceData(device)))
+                .orElseGet(() -> StructuredToolResult.failure("getDeviceState", "device:" + deviceId,
+                        SOURCE_DEVICE, observedAt, "Device not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<FirmwareVersionToolData> getFirmwareVersion(String firmwareVersionId) {
+        Instant observedAt = Instant.now(clock);
+        return firmwareVersionRepository.findById(firmwareVersionId)
+                .map(version -> StructuredToolResult.success("getFirmwareVersion", "firmware:" + version.getId(),
+                        SOURCE_FIRMWARE, observedAt, toFirmwareData(version)))
+                .orElseGet(() -> StructuredToolResult.failure("getFirmwareVersion", "firmware:" + firmwareVersionId,
+                        SOURCE_FIRMWARE, observedAt, "Firmware version not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<VersionCompatibilityDecision> getVersionCompatibility(UUID upgradeTaskId) {
+        Instant observedAt = Instant.now(clock);
+        return upgradeTaskRepository.findById(upgradeTaskId)
+                .map(task -> {
+                    VersionCompatibilityFacts facts = new VersionCompatibilityFacts(
+                            task.getDevice().getModel(), task.getDevice().getCurrentVersion(),
+                            task.getTargetFirmwareVersion().getVersion(),
+                            task.getTargetFirmwareVersion().getReleaseStatus(),
+                            task.getTargetFirmwareVersion().getCompatibleModels());
+                    return StructuredToolResult.success("getVersionCompatibility",
+                            "version-compatibility:" + task.getId(), SOURCE_COMPATIBILITY, observedAt,
+                            compatibilityRule.evaluate(facts));
+                })
+                .orElseGet(() -> StructuredToolResult.failure("getVersionCompatibility",
+                        "version-compatibility:" + upgradeTaskId, SOURCE_COMPATIBILITY, observedAt,
+                        "Upgrade task not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<List<FailureLogToolData>> getFailureLogs(UUID upgradeTaskId) {
+        Instant observedAt = Instant.now(clock);
+        return upgradeTaskRepository.findById(upgradeTaskId)
+                .map(task -> StructuredToolResult.success("getFailureLogs", "failure-logs:" + task.getId(),
+                        SOURCE_LOG, observedAt, failureLogRepository.findByUpgradeTaskOrderByObservedAtAsc(task)
+                                .stream().map(this::toFailureLogData).toList()))
+                .orElseGet(() -> StructuredToolResult.failure("getFailureLogs", "failure-logs:" + upgradeTaskId,
+                        SOURCE_LOG, observedAt, "Upgrade task not found"));
+    }
+
+    private DeviceStateToolData toDeviceData(Device device) {
+        return new DeviceStateToolData(device.getId(), device.getSerialNumber(), device.getModel(),
+                device.getCurrentVersion(), device.isOnline(), device.getStorageAvailableMb());
+    }
+
+    private FirmwareVersionToolData toFirmwareData(FirmwareVersion version) {
+        return new FirmwareVersionToolData(version.getId(), version.getVersion(), version.getReleaseStatus(),
+                version.getCompatibleModels(), version.getChecksum(), version.getReleasedAt());
+    }
+
+    private FailureLogToolData toFailureLogData(FailureLog log) {
+        return new FailureLogToolData(log.getId(), log.getObservedAt(), log.getLevel(), log.getCode(),
+                log.getMessage(), log.getSource());
+    }
+}
