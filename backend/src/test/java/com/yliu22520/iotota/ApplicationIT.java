@@ -63,7 +63,7 @@ class ApplicationIT {
                 """, Integer.class);
 
         assertThat(tableCount).isEqualTo(12);
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
         assertThat(jdbcTemplate.queryForObject("select count(*) from pg_extension where extname = 'vector'", Integer.class))
                 .isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("select count(*) from upgrade_task", Integer.class)).isEqualTo(2);
