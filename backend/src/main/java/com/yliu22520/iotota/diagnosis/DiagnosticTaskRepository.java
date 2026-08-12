@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public interface DiagnosticTaskRepository extends JpaRepository<DiagnosticTask, UUID> {
@@ -17,6 +18,14 @@ public interface DiagnosticTaskRepository extends JpaRepository<DiagnosticTask, 
             """)
     @EntityGraph(attributePaths = {"upgradeTask", "upgradeTask.device", "upgradeTask.targetFirmwareVersion"})
     Optional<DiagnosticTask> findActiveByUpgradeTaskId(UUID upgradeTaskId);
+
+    @Query("""
+            select d from DiagnosticTask d
+            where d.upgradeTask.id = :upgradeTaskId
+            order by d.updatedAt desc
+            """)
+    @EntityGraph(attributePaths = {"upgradeTask", "upgradeTask.device", "upgradeTask.targetFirmwareVersion"})
+    List<DiagnosticTask> findAllByUpgradeTaskIdOrderByUpdatedAtDesc(UUID upgradeTaskId);
 
     @Override
     @EntityGraph(attributePaths = {"upgradeTask", "upgradeTask.device", "upgradeTask.targetFirmwareVersion"})

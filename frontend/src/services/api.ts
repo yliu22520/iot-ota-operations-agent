@@ -16,6 +16,7 @@ export interface TaskSummary {
   failureCode: string
   failureSummary: string
   diagnosticStatus: string | null
+  diagnosticTaskId?: string | null
   simulated: boolean
 }
 
@@ -76,6 +77,8 @@ export interface EvidenceRef {
   source: string
   observedAt: string
   summary: string
+  kind?: string
+  locator?: string
 }
 
 export interface ReportItem {
@@ -89,6 +92,7 @@ export interface DiagnosticReport {
   diagnosticTaskId: string
   rootCauseCode: string
   conclusion: string
+  confidence?: string
   facts: ReportItem[]
   ruleConclusions: ReportItem[]
   inferences: ReportItem[]
@@ -166,6 +170,59 @@ export interface AuditEventView {
   metadata: Record<string, unknown>
 }
 
+export interface PublicSummary {
+  caseId: string
+  title: string
+  scenario: string
+  conclusion: string
+  confidence: string
+  evidence: string[]
+  actionOutcome: string
+  simulated: boolean
+}
+
+export interface DiagnosticTelemetry {
+  diagnosticTaskId: string
+  modelConfiguration: {
+    provider: string
+    modelId: string
+    reasoningTier: string
+    promptVersion: string
+    toolSchemaVersion: string
+    temperature: number
+    topP: number
+    reportSchemaVersion: string
+    embeddingModelId: string
+    embeddingModelRevision: string
+    embeddingModelSha256: string
+    automaticFallbackEnabled: boolean
+  }
+  budget: {
+    maxToolCalls: number
+    maxModelInteractions: number
+    maxDurationMs: number
+    maxOutputTokens: number
+    maxContextTokens: number
+    maxReadToolRetries: number
+  }
+  elapsedMs: number
+  toolEvents: Array<{
+    toolName: string
+    evidenceId: string
+    source: string
+    observedAt: string
+    durationMs: number
+    result: string
+    errorCode: string | null
+  }>
+  tokenUsage: {
+    inputTokens: number | null
+    outputTokens: number | null
+    reported: boolean
+  }
+  errors: Array<{ code: string; message: string; occurredAt: string }>
+}
+
 export interface DiagnosticTaskView {
   diagnosticTaskId: string
   upgradeTaskId: string
@@ -212,7 +269,12 @@ export async function logout() {
 }
 
 export async function listTasks() {
-  const response = await client.get<{ items: TaskSummary[]; simulated: boolean }>('/v1/upgrade-tasks')
+  const response = await client.get<{ items: TaskSummary[]; simulated: boolean }>('/v1/workbench/tasks')
+  return response.data
+}
+
+export async function listPublicSummaries() {
+  const response = await client.get<{ items: PublicSummary[] }>('/v1/public/diagnostic-summaries')
   return response.data
 }
 
@@ -257,6 +319,13 @@ export async function approveRetryPlan(diagnosticTaskId: string, planVersion: nu
 export async function getAuditEvents(diagnosticTaskId: string) {
   const response = await client.get<AuditEventView[]>(
     `/v1/diagnostic-tasks/${encodeURIComponent(diagnosticTaskId)}/audit-events`,
+  )
+  return response.data
+}
+
+export async function getTelemetry(diagnosticTaskId: string) {
+  const response = await client.get<DiagnosticTelemetry>(
+    `/v1/diagnostic-tasks/${encodeURIComponent(diagnosticTaskId)}/telemetry`,
   )
   return response.data
 }

@@ -61,6 +61,7 @@ public class DiagnosticReportFactory {
                 diagnosticTaskId,
                 rootCauseCode,
                 conclusion,
+                versionIncompatible ? "HIGH" : "LOW",
                 List.of(
                         new DiagnosticReportDocument.ReportItem("TASK_FAILURE",
                                 "Upgrade task " + task.id() + " is in " + task.status()
@@ -111,6 +112,7 @@ public class DiagnosticReportFactory {
                 diagnosticTaskId,
                 "EVIDENCE_INCOMPLETE",
                 "Diagnosis is incomplete because a required evidence source was unavailable.",
+                "LOW",
                 List.of(),
                 List.of(),
                 List.of(),
@@ -158,6 +160,7 @@ public class DiagnosticReportFactory {
                 diagnosticTaskId,
                 "CALLBACK_TIMEOUT",
                 "The upgrade command was sent but its callback timed out; backend rules allow one approved retry.",
+                "HIGH",
                 List.of(
                         new DiagnosticReportDocument.ReportItem("TASK_FINAL_FAILURE",
                                 "Upgrade task " + task.id() + " is in FINAL_FAILURE.", List.of(taskResult.evidenceId())),

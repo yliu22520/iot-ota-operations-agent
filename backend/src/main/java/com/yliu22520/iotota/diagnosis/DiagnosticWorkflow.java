@@ -5,7 +5,9 @@ import com.yliu22520.iotota.knowledge.KnowledgeSearchResult;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -78,6 +80,7 @@ public class DiagnosticWorkflow {
             VersionCompatibilityFacts facts = new VersionCompatibilityFacts(device.data().model(),
                     device.data().currentVersion(), firmware.data().version(), firmware.data().releaseStatus(),
                     firmware.data().compatibleModels());
+            Instant modelStartedAt = Instant.now(clock);
             DiagnosticExplanation explanation = chatModel.explain(new DiagnosticExplanationRequest(
                     facts, compatibility.data(), java.util.List.of(
                             new EvidenceRef(task.evidenceId(), task.source(), task.observedAt(), "upgrade task"),
@@ -85,6 +88,8 @@ public class DiagnosticWorkflow {
                             new EvidenceRef(firmware.evidenceId(), firmware.source(), firmware.observedAt(), "firmware version"),
                             new EvidenceRef(compatibility.evidenceId(), compatibility.source(), compatibility.observedAt(),
                                     "backend compatibility rule"))));
+            auditModelCall(diagnosticTaskId, actor,
+                    Math.max(0L, Duration.between(modelStartedAt, Instant.now(clock)).toMillis()));
 
             DiagnosticReportDocument report = reportFactory.build(diagnosticTaskId, task, device, firmware,
                     compatibility, logs, knowledge, explanation, chatModel.modelId(), Instant.now(clock));
@@ -153,19 +158,27 @@ public class DiagnosticWorkflow {
     }
 
     private void recordToolCall(UUID diagnosticTaskId, String actor, StructuredToolResult<?> result) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("toolName", result.toolName());
+        metadata.put("evidenceId", result.evidenceId());
+        metadata.put("source", result.source());
+        metadata.put("observedAt", result.observedAt().toString());
+        metadata.put("durationMs", Math.max(0L, Duration.between(result.observedAt(), Instant.now(clock)).toMillis()));
+        if (!result.success()) metadata.put("errorCode", "TOOL_RESULT_UNAVAILABLE");
         auditService.append(actor, "DIAGNOSTIC_TASK", diagnosticTaskId.toString(), "TOOL_CALLED",
                 result.success() ? "SUCCESS" : "FAILED", diagnosticTaskId.toString(),
-                "Structured diagnostic tool call completed", Map.of(
-                        "toolName", result.toolName(),
-                        "evidenceId", result.evidenceId(),
-                        "source", result.source(),
-                        "observedAt", result.observedAt().toString()));
+                "Structured diagnostic tool call completed", metadata);
+    }
+
+    private void auditModelCall(UUID diagnosticTaskId, String actor, long durationMs) {
+        auditService.append(actor, "DIAGNOSTIC_TASK", diagnosticTaskId.toString(), "MODEL_CALLED", "SUCCESS",
+                diagnosticTaskId.toString(), "Structured model explanation completed", Map.of(
+                        "modelId", chatModel.modelId(), "durationMs", durationMs,
+                        "tokenUsageReported", false));
     }
 
     private void requireSuccess(StructuredToolResult<?> result) {
-        if (!result.success()) {
-            throw new DiagnosticEvidenceUnavailableException(result);
-        }
+        if (!result.success()) throw new DiagnosticEvidenceUnavailableException(result);
     }
 
     private void completeAsIncomplete(UUID diagnosticTaskId, String actor, StructuredToolResult<?> failedTool) {

@@ -19,7 +19,7 @@ async function logout() {
     <el-header class="app-header">
       <div>
         <p class="eyebrow">IoT / OTA OPERATIONS</p>
-        <h1>升级任务运维工作台</h1>
+        <h1>物联网运维工作台</h1>
       </div>
       <div v-if="auth.authenticated" class="operator-menu">
         <span>{{ auth.username }}</span>
@@ -27,8 +27,9 @@ async function logout() {
       </div>
     </el-header>
     <el-main>
-      <nav v-if="auth.authenticated" class="workbench-nav">
-        <RouterLink to="/tasks">失败升级任务</RouterLink>
+      <nav class="workbench-nav">
+        <RouterLink v-if="auth.authenticated" to="/tasks">失败任务列表</RouterLink>
+        <RouterLink to="/public">公开摘要</RouterLink>
       </nav>
       <RouterView />
     </el-main>

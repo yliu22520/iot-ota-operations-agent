@@ -10,6 +10,7 @@ public record DiagnosticReportDocument(
         UUID diagnosticTaskId,
         String rootCauseCode,
         String conclusion,
+        String confidence,
         List<ReportItem> facts,
         List<ReportItem> ruleConclusions,
         List<ReportItem> inferences,

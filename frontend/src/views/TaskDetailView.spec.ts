@@ -10,6 +10,7 @@ import {
   getAuditEvents,
   getDiagnosis,
   getTask,
+  getTelemetry,
   startDiagnosis,
 } from '../services/api'
 
@@ -23,12 +24,29 @@ vi.mock('../services/api', async () => {
     startDiagnosis: vi.fn(),
     approveRetryPlan: vi.fn(),
     getAuditEvents: vi.fn(),
+    getTelemetry: vi.fn(),
   }
 })
 
 describe('TaskDetailView diagnosis seam', () => {
   beforeEach(() => {
     vi.mocked(getAuditEvents).mockResolvedValue([])
+    vi.mocked(getTelemetry).mockResolvedValue({
+      diagnosticTaskId: 'diagnostic-101',
+      modelConfiguration: {
+        provider: 'controlled', modelId: 'controlled-diagnostic-explainer-v1', reasoningTier: 'CONTROLLED',
+        promptVersion: 'diagnosis-agent-v1', toolSchemaVersion: 'diagnostic-tools-v1', temperature: 0, topP: 1,
+        reportSchemaVersion: '1', embeddingModelId: 'test-embedding', embeddingModelRevision: 'test-revision',
+        embeddingModelSha256: 'test-sha256', automaticFallbackEnabled: false,
+      },
+      budget: { maxToolCalls: 10, maxModelInteractions: 8, maxDurationMs: 90000, maxOutputTokens: 4096,
+        maxContextTokens: 32768, maxReadToolRetries: 1 },
+      elapsedMs: 12,
+      toolEvents: [{ toolName: 'getUpgradeTask', evidenceId: 'upgrade-task:task-101', source: 'simulator',
+        observedAt: '2026-08-08T00:01:01Z', durationMs: 1, result: 'SUCCESS', errorCode: null }],
+      tokenUsage: { inputTokens: null, outputTokens: null, reported: false },
+      errors: [],
+    })
     vi.mocked(getTask).mockResolvedValue({
       task: {
         id: 'task-101', deviceId: 'device-sim-001', deviceSerialNumber: 'SIM-EDGE-001',
@@ -89,6 +107,27 @@ describe('TaskDetailView diagnosis seam', () => {
     expect(screen.getByText(/do not retry this task/)).toBeTruthy()
     expect(screen.getByText('Deterministic rule forbids retry.')).toBeTruthy()
     expect(screen.getByText('Verify the model compatibility matrix.')).toBeTruthy()
+  })
+
+  it('renders structured developer telemetry without raw reasoning or prompts', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/tasks/:id', component: TaskDetailView }],
+    })
+    await router.push('/tasks/task-101')
+
+    render(TaskDetailView, {
+      global: { plugins: [createTestingPinia(), router, ElementPlus] },
+    })
+
+    await fireEvent.click(await screen.findByTestId('start-diagnosis'))
+    await fireEvent.click(await screen.findByTestId('show-telemetry'))
+
+    await waitFor(() => expect(getTelemetry).toHaveBeenCalledWith('diagnostic-101'))
+    expect(await screen.findByTestId('diagnostic-telemetry')).toBeTruthy()
+    expect(screen.getByText(/controlled-diagnostic-explainer-v1/)).toBeTruthy()
+    expect(screen.getByText(/模型未上报 token 用量/)).toBeTruthy()
+    expect(screen.queryByText(/reasoning_content|raw prompt/i)).toBeNull()
   })
 
   it('shows the bound plan and uses one approval action to execute, verify, and refresh the audit timeline', async () => {
