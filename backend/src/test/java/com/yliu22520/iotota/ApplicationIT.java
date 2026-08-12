@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.flywaydb.core.Flyway;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestEmbeddingConfiguration.class)
 class ApplicationIT {
 
     @Container
@@ -49,6 +51,7 @@ class ApplicationIT {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+        registry.add("knowledge.embedding.provider", () -> "test");
     }
 
     @Test
@@ -60,11 +63,11 @@ class ApplicationIT {
                   and table_name in ('device', 'firmware_version', 'upgrade_task', 'failure_log',
                                      'message_state', 'operator_user', 'diagnostic_task', 'diagnostic_report',
                                      'retry_plan', 'retry_execution', 'simulator_retry_attempt',
-                                     'knowledge_document', 'audit_event')
+                                     'knowledge_document', 'knowledge_chunk', 'audit_event')
                 """, Integer.class);
 
-        assertThat(tableCount).isEqualTo(13);
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
+        assertThat(tableCount).isEqualTo(14);
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
         assertThat(jdbcTemplate.queryForObject("select count(*) from pg_extension where extname = 'vector'", Integer.class))
                 .isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("select count(*) from upgrade_task", Integer.class)).isEqualTo(2);

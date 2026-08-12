@@ -1,5 +1,8 @@
 package com.yliu22520.iotota.diagnosis;
 
+import com.yliu22520.iotota.knowledge.KnowledgeRetriever;
+import com.yliu22520.iotota.knowledge.KnowledgeSearchQuery;
+import com.yliu22520.iotota.knowledge.KnowledgeSearchResult;
 import com.yliu22520.iotota.simulator.Device;
 import com.yliu22520.iotota.simulator.DeviceRepository;
 import com.yliu22520.iotota.simulator.FailureLog;
@@ -27,6 +30,7 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
     private static final String SOURCE_COMPATIBILITY = "backend.version-compatibility-rule";
     private static final String SOURCE_LOG = "simulator.failure-log";
     private static final String SOURCE_MESSAGE = "simulator.message-state";
+    private static final String SOURCE_KNOWLEDGE = "local.knowledge.pgvector";
 
     private final UpgradeTaskRepository upgradeTaskRepository;
     private final DeviceRepository deviceRepository;
@@ -34,6 +38,7 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
     private final FailureLogRepository failureLogRepository;
     private final MessageStateRepository messageStateRepository;
     private final VersionCompatibilityRule compatibilityRule;
+    private final KnowledgeRetriever knowledgeRetriever;
     private final Clock clock;
 
     public SimulatorDiagnosticToolset(UpgradeTaskRepository upgradeTaskRepository,
@@ -42,6 +47,7 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
                                       FailureLogRepository failureLogRepository,
                                       MessageStateRepository messageStateRepository,
                                       VersionCompatibilityRule compatibilityRule,
+                                      KnowledgeRetriever knowledgeRetriever,
                                       Clock clock) {
         this.upgradeTaskRepository = upgradeTaskRepository;
         this.deviceRepository = deviceRepository;
@@ -49,6 +55,7 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
         this.failureLogRepository = failureLogRepository;
         this.messageStateRepository = messageStateRepository;
         this.compatibilityRule = compatibilityRule;
+        this.knowledgeRetriever = knowledgeRetriever;
         this.clock = clock;
     }
 
@@ -130,6 +137,27 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
                                 .stream().map(this::toMessageStateData).toList()))
                 .orElseGet(() -> StructuredToolResult.failure("getMessageStates", "message-state:" + upgradeTaskId,
                         SOURCE_MESSAGE, observedAt, "Upgrade task not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<KnowledgeSearchResult> searchKnowledge(UUID upgradeTaskId) {
+        Instant observedAt = Instant.now(clock);
+        return upgradeTaskRepository.findById(upgradeTaskId)
+                .map(task -> {
+                    KnowledgeSearchResult search = knowledgeRetriever.search(new KnowledgeSearchQuery(
+                            task.getFailureCode(), task.getFailureSummary(), "ota-upgrade",
+                            task.getTargetFirmwareVersion().getVersion()));
+                    if (search.success()) {
+                        return StructuredToolResult.success("searchKnowledge", "knowledge-search:" + task.getId(),
+                                SOURCE_KNOWLEDGE, observedAt, search);
+                    }
+                    return StructuredToolResult.<KnowledgeSearchResult>failure("searchKnowledge",
+                            "knowledge-search:" + task.getId(), SOURCE_KNOWLEDGE, observedAt, search.error());
+                })
+                .orElseGet(() -> StructuredToolResult.failure("searchKnowledge",
+                        "knowledge-search:" + upgradeTaskId, SOURCE_KNOWLEDGE, observedAt,
+                        "Upgrade task not found"));
     }
 
     private DeviceStateToolData toDeviceData(Device device) {

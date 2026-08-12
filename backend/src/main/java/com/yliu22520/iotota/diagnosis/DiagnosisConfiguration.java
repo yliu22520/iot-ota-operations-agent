@@ -1,5 +1,6 @@
 package com.yliu22520.iotota.diagnosis;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -22,8 +23,11 @@ public class DiagnosisConfiguration {
     }
 
     @Bean
-    DiagnosticReportFactory diagnosticReportFactory() {
-        return new DiagnosticReportFactory();
+    DiagnosticReportFactory diagnosticReportFactory(
+            @Value("${knowledge.embedding.model-id}") String embeddingModelId,
+            @Value("${knowledge.embedding.model-revision}") String embeddingModelRevision,
+            @Value("${knowledge.embedding.model-sha256}") String embeddingModelSha256) {
+        return new DiagnosticReportFactory(embeddingModelId, embeddingModelRevision, embeddingModelSha256);
     }
 
     @Bean(name = "diagnosticExecutor")

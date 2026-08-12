@@ -4,6 +4,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.yliu22520.iotota.action.RetryAuthorizationOutcome;
 import com.yliu22520.iotota.action.RetryAuthorizationTransaction;
 import com.yliu22520.iotota.action.RetryRecoveryService;
+import com.yliu22520.iotota.knowledge.KnowledgeIndexInitializer;
 import com.yliu22520.iotota.simulator.SimulatorRetryGateway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -36,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = IotOtaOperationsApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestEmbeddingConfiguration.class)
 class DiagnosticWorkflowIT {
 
     @Container
@@ -59,11 +62,15 @@ class DiagnosticWorkflowIT {
     @Autowired
     private SimulatorRetryGateway simulatorRetryGateway;
 
+    @Autowired
+    private KnowledgeIndexInitializer knowledgeIndexInitializer;
+
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+        registry.add("knowledge.embedding.provider", () -> "test");
     }
 
     @Test
@@ -108,7 +115,10 @@ class DiagnosticWorkflowIT {
         }
 
         assertThat(state).isEqualTo("COMPLETED");
-        assertThat(response).contains("VERSION_INCOMPATIBLE", "FORBIDDEN", "TARGET_MODEL_NOT_SUPPORTED");
+        assertThat(response).contains("VERSION_INCOMPATIBLE", "FORBIDDEN", "TARGET_MODEL_NOT_SUPPORTED",
+                "KNOWLEDGE_SUGGESTION", "knowledge:ota-version-compatibility");
+        assertThat(JsonPath.<List<String>>read(response, "$.report.rootCauseEvidenceRefs"))
+                .noneMatch(ref -> ref.startsWith("knowledge:"));
         assertThat(response).doesNotContain("reasoning_content");
         assertThat(jdbcTemplate.queryForObject("select count(*) from upgrade_task", Integer.class))
                 .isEqualTo(upgradeCount);
@@ -125,13 +135,58 @@ class DiagnosticWorkflowIT {
                 Integer.class, diagnosticTaskId)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from audit_event where object_id = ? and action = 'TOOL_CALLED'",
-                Integer.class, diagnosticTaskId)).isGreaterThanOrEqualTo(5);
+                Integer.class, diagnosticTaskId)).isGreaterThanOrEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from audit_event where object_id = ? and action = 'TOOL_CALLED' "
+                        + "and metadata ->> 'toolName' = 'searchKnowledge'",
+                Integer.class, diagnosticTaskId)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from audit_event where object_id = ? and action = 'REPORT_GENERATED'",
                 Integer.class, diagnosticTaskId)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from audit_event where object_id = ? and action = 'DIAGNOSTIC_COMPLETED'",
                 Integer.class, diagnosticTaskId)).isEqualTo(1);
+    }
+
+    @Test
+    void completesWithExplicitGapsWhenLocalKnowledgeIsEmptyOrUnavailable() throws Exception {
+        var session = login();
+        String taskId = jdbcTemplate.queryForObject(
+                "select id::text from upgrade_task where failure_code = 'VERSION_INCOMPATIBLE' limit 1", String.class);
+        int upgradeVersion = jdbcTemplate.queryForObject(
+                "select version from upgrade_task where id = ?", Integer.class, UUID.fromString(taskId));
+        int retryAttempts = jdbcTemplate.queryForObject("select count(*) from simulator_retry_attempt", Integer.class);
+
+        jdbcTemplate.update("delete from knowledge_chunk");
+        String emptyResponse = startDiagnosisAndWait(session, taskId, "COMPLETED");
+        assertThat(emptyResponse).contains("KNOWLEDGE_NOT_FOUND", "FORBIDDEN");
+        assertThat(emptyResponse).doesNotContain("KNOWLEDGE_SUGGESTION");
+        knowledgeIndexInitializer.initialize();
+
+        boolean renamed = false;
+        try {
+            jdbcTemplate.execute("alter table knowledge_chunk rename to knowledge_chunk_unavailable");
+            renamed = true;
+            String response = startDiagnosisAndWait(session, taskId, "COMPLETED");
+            String diagnosticTaskId = JsonPath.read(response, "$.diagnosticTaskId");
+
+            assertThat(response).contains("KNOWLEDGE_RETRIEVAL_FAILED", "FORBIDDEN");
+            assertThat(response).doesNotContain("KNOWLEDGE_SUGGESTION");
+            assertThat(JsonPath.<Boolean>read(response, "$.report.retryEligibility.eligible")).isFalse();
+            assertThat(jdbcTemplate.queryForObject(
+                    "select version from upgrade_task where id = ?", Integer.class, UUID.fromString(taskId)))
+                    .isEqualTo(upgradeVersion);
+            assertThat(jdbcTemplate.queryForObject("select count(*) from simulator_retry_attempt", Integer.class))
+                    .isEqualTo(retryAttempts);
+            assertThat(jdbcTemplate.queryForObject(
+                    "select count(*) from audit_event where object_id = ? and action = 'TOOL_CALLED' "
+                            + "and result = 'FAILED' and metadata ->> 'toolName' = 'searchKnowledge'",
+                    Integer.class, diagnosticTaskId)).isEqualTo(1);
+        } finally {
+            if (renamed) {
+                jdbcTemplate.execute("alter table knowledge_chunk_unavailable rename to knowledge_chunk");
+            }
+        }
     }
 
     @Test
@@ -387,6 +442,18 @@ class DiagnosticWorkflowIT {
                 .andExpect(status().isAccepted())
                 .andReturn();
         return JsonPath.read(created.getResponse().getContentAsString(), "$.diagnosticTaskId");
+    }
+
+    private String startDiagnosisAndWait(org.springframework.mock.web.MockHttpSession session,
+                                         String upgradeTaskId,
+                                         String expectedState) throws Exception {
+        MvcResult created = mockMvc.perform(post("/api/v1/diagnostic-tasks")
+                        .with(csrf()).session(session).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"upgradeTaskId\":\"" + upgradeTaskId + "\"}"))
+                .andExpect(status().isAccepted())
+                .andReturn();
+        String diagnosticTaskId = JsonPath.read(created.getResponse().getContentAsString(), "$.diagnosticTaskId");
+        return waitForState(session, diagnosticTaskId, expectedState);
     }
 
     private static boolean isTerminal(String state) {

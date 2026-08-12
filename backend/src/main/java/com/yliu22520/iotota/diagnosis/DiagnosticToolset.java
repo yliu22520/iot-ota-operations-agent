@@ -1,5 +1,7 @@
 package com.yliu22520.iotota.diagnosis;
 
+import com.yliu22520.iotota.knowledge.KnowledgeSearchResult;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -17,4 +19,6 @@ public interface DiagnosticToolset {
     StructuredToolResult<List<FailureLogToolData>> getFailureLogs(UUID upgradeTaskId);
 
     StructuredToolResult<List<MessageStateToolData>> getMessageStates(UUID upgradeTaskId);
+
+    StructuredToolResult<KnowledgeSearchResult> searchKnowledge(UUID upgradeTaskId);
 }

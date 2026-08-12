@@ -11,7 +11,9 @@ public record DiagnosticReportDocument(
         String rootCauseCode,
         String conclusion,
         List<ReportItem> facts,
+        List<ReportItem> ruleConclusions,
         List<ReportItem> inferences,
+        List<ReportItem> knowledgeSuggestions,
         List<ReportItem> exclusions,
         List<ReportItem> unknowns,
         List<ReportItem> evidenceGaps,
@@ -30,6 +32,8 @@ public record DiagnosticReportDocument(
     }
 
     public record ReportProvenance(String modelId, String promptVersion, String schemaVersion,
+                                   String embeddingModelId, String embeddingModelRevision,
+                                   String embeddingModelSha256,
                                    Instant generatedAt) {
     }
 }

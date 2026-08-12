@@ -50,13 +50,21 @@ describe('TaskDetailView diagnosis seam', () => {
       report: {
         schemaVersion: 1, diagnosticTaskId: 'diagnostic-101', rootCauseCode: 'VERSION_INCOMPATIBLE',
         conclusion: 'Target firmware is incompatible with the device model; retry is forbidden.',
-        facts: [], inferences: [], exclusions: [], unknowns: [], evidenceGaps: [],
+        facts: [],
+        ruleConclusions: [{ code: 'TARGET_MODEL_NOT_SUPPORTED', text: 'Deterministic rule forbids retry.',
+          evidenceRefs: ['version-compatibility:task-101'] }],
+        inferences: [],
+        knowledgeSuggestions: [{ code: 'KNOWLEDGE_SUGGESTION', text: 'Verify the model compatibility matrix.',
+          evidenceRefs: ['knowledge:ota-version-compatibility:decision:001'] }],
+        exclusions: [], unknowns: [], evidenceGaps: [],
         evidenceRefs: [{ evidenceId: 'version-compatibility:task-101', source: 'backend.version-compatibility-rule', observedAt: '2026-08-08T00:01:02Z', summary: 'Backend rule returned TARGET_MODEL_NOT_SUPPORTED' }],
         rootCauseEvidenceRefs: ['version-compatibility:task-101'],
         retryEligibility: { eligible: false, status: 'FORBIDDEN', reasonCode: 'TARGET_MODEL_NOT_SUPPORTED', reason: 'do not retry this task' },
         retryPlan: null,
         nextAction: 'Create a new task after correcting the mapping.', decisionTraceRefs: [],
-        provenance: { modelId: 'controlled-diagnostic-explainer-v1', promptVersion: 'v1', schemaVersion: 'v1', generatedAt: '2026-08-08T00:01:02Z' },
+        provenance: { modelId: 'controlled-diagnostic-explainer-v1', promptVersion: 'v1', schemaVersion: 'v1',
+          embeddingModelId: 'intfloat/multilingual-e5-small', embeddingModelRevision: 'test-revision',
+          embeddingModelSha256: 'test-sha256', generatedAt: '2026-08-08T00:01:02Z' },
       },
     })
   })
@@ -79,6 +87,8 @@ describe('TaskDetailView diagnosis seam', () => {
     expect(await screen.findByText('VERSION_INCOMPATIBLE')).toBeTruthy()
     expect(screen.getByText(/FORBIDDEN/)).toBeTruthy()
     expect(screen.getByText(/do not retry this task/)).toBeTruthy()
+    expect(screen.getByText('Deterministic rule forbids retry.')).toBeTruthy()
+    expect(screen.getByText('Verify the model compatibility matrix.')).toBeTruthy()
   })
 
   it('shows the bound plan and uses one approval action to execute, verify, and refresh the audit timeline', async () => {
@@ -89,7 +99,8 @@ describe('TaskDetailView diagnosis seam', () => {
       report: {
         schemaVersion: 1, diagnosticTaskId: 'diagnostic-102', rootCauseCode: 'CALLBACK_TIMEOUT',
         conclusion: 'The callback timed out and one approved retry is eligible.',
-        facts: [], inferences: [], exclusions: [], unknowns: [], evidenceGaps: [],
+        facts: [], ruleConclusions: [], inferences: [], knowledgeSuggestions: [],
+        exclusions: [], unknowns: [], evidenceGaps: [],
         evidenceRefs: [{ evidenceId: 'message-state:task-102', source: 'simulator.message-state',
           observedAt: '2026-08-08T00:02:01Z', summary: 'message sent; callback timeout' }],
         rootCauseEvidenceRefs: ['message-state:task-102'],
@@ -106,7 +117,9 @@ describe('TaskDetailView diagnosis seam', () => {
         },
         nextAction: 'Review and approve.', decisionTraceRefs: [],
         provenance: { modelId: 'controlled-diagnostic-explainer-v1', promptVersion: 'v1',
-          schemaVersion: 'v1', generatedAt: '2026-08-08T00:02:01Z' },
+          schemaVersion: 'v1', embeddingModelId: 'intfloat/multilingual-e5-small',
+          embeddingModelRevision: 'test-revision', embeddingModelSha256: 'test-sha256',
+          generatedAt: '2026-08-08T00:02:01Z' },
       },
     } as any)
     vi.mocked(approveRetryPlan).mockResolvedValue({

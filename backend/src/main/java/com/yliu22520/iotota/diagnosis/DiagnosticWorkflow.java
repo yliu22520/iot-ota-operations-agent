@@ -1,6 +1,7 @@
 package com.yliu22520.iotota.diagnosis;
 
 import com.yliu22520.iotota.audit.AuditService;
+import com.yliu22520.iotota.knowledge.KnowledgeSearchResult;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -65,8 +66,12 @@ public class DiagnosticWorkflow {
             recordToolCall(diagnosticTaskId, actor, logs);
             requireSuccess(logs);
 
+            StructuredToolResult<KnowledgeSearchResult> knowledge = toolset.searchKnowledge(task.data().id());
+            recordToolCall(diagnosticTaskId, actor, knowledge);
+
             if ("CALLBACK_TIMEOUT".equals(task.data().failureCode())) {
-                executeCallbackTimeoutPath(diagnosticTaskId, actor, task, device, firmware, compatibility, logs);
+                executeCallbackTimeoutPath(diagnosticTaskId, actor, task, device, firmware, compatibility, logs,
+                        knowledge);
                 return;
             }
 
@@ -82,7 +87,7 @@ public class DiagnosticWorkflow {
                                     "backend compatibility rule"))));
 
             DiagnosticReportDocument report = reportFactory.build(diagnosticTaskId, task, device, firmware,
-                    compatibility, logs, explanation, chatModel.modelId(), Instant.now(clock));
+                    compatibility, logs, knowledge, explanation, chatModel.modelId(), Instant.now(clock));
             stateService.persistReportAndMarkReady(diagnosticTaskId, report, actor);
             stateService.transition(diagnosticTaskId, DiagnosticState.COMPLETED, actor);
             auditService.append(actor, "DIAGNOSTIC_TASK", diagnosticTaskId.toString(),
@@ -105,7 +110,8 @@ public class DiagnosticWorkflow {
             StructuredToolResult<DeviceStateToolData> device,
             StructuredToolResult<FirmwareVersionToolData> firmware,
             StructuredToolResult<VersionCompatibilityDecision> compatibility,
-            StructuredToolResult<java.util.List<FailureLogToolData>> logs) {
+            StructuredToolResult<java.util.List<FailureLogToolData>> logs,
+            StructuredToolResult<KnowledgeSearchResult> knowledge) {
         StructuredToolResult<java.util.List<MessageStateToolData>> messages =
                 toolset.getMessageStates(task.data().id());
         recordToolCall(diagnosticTaskId, actor, messages);
@@ -125,7 +131,7 @@ public class DiagnosticWorkflow {
                 latestMessage.callbackStatus(), firmware.data().version(), evidenceRefs, actor));
 
         DiagnosticReportDocument report = reportFactory.buildCallbackTimeout(diagnosticTaskId, task, device,
-                firmware, compatibility, logs, messages, planning, chatModel.modelId(), Instant.now(clock));
+                firmware, compatibility, logs, messages, knowledge, planning, chatModel.modelId(), Instant.now(clock));
         stateService.persistReportAndMarkReady(diagnosticTaskId, report, actor);
         if (planning.plan() != null) {
             stateService.transition(diagnosticTaskId, DiagnosticState.WAITING_APPROVAL, actor);
