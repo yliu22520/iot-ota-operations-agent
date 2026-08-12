@@ -70,6 +70,7 @@ public class DiagnosticReportFactory {
                         versionIncompatible
                                 ? "The target firmware does not support the device model; do not retry this task."
                                 : "The evidence is conflicting or incomplete; backend rules forbid retry."),
+                null,
                 versionIncompatible
                         ? "Correct the device-to-firmware compatibility mapping and create a new upgrade task."
                         : "Collect consistent evidence before considering any new operation.",
@@ -101,9 +102,58 @@ public class DiagnosticReportFactory {
                 List.of(failedTool.evidenceId()),
                 new DiagnosticReportDocument.RetryEligibility(false, "FORBIDDEN", "EVIDENCE_INCOMPLETE",
                         "Retry is forbidden while required evidence is unavailable."),
+                null,
                 "Restore the evidence source and start a new diagnosis.",
                 List.of("trace:" + diagnosticTaskId + ":evidence-gap"),
                 new DiagnosticReportDocument.ReportProvenance(modelId, "diagnosis-version-incompatible-v1",
+                        "diagnostic-report-v1", generatedAt));
+    }
+
+    public DiagnosticReportDocument buildCallbackTimeout(
+            UUID diagnosticTaskId,
+            StructuredToolResult<UpgradeTaskToolData> taskResult,
+            StructuredToolResult<DeviceStateToolData> deviceResult,
+            StructuredToolResult<FirmwareVersionToolData> firmwareResult,
+            StructuredToolResult<VersionCompatibilityDecision> compatibilityResult,
+            StructuredToolResult<List<FailureLogToolData>> logsResult,
+            StructuredToolResult<List<MessageStateToolData>> messagesResult,
+            RetryPlanningResult planning,
+            String modelId,
+            Instant generatedAt) {
+        UpgradeTaskToolData task = taskResult.data();
+        MessageStateToolData message = messagesResult.data().get(messagesResult.data().size() - 1);
+        List<EvidenceRef> evidence = new ArrayList<>(List.of(
+                ref(taskResult, "Upgrade task is a final failure with callback timeout"),
+                ref(deviceResult, "Device is online"),
+                ref(firmwareResult, "Target firmware is released for the device model"),
+                ref(compatibilityResult, "Backend compatibility rule permits the target version"),
+                ref(logsResult, "Failure logs contain callback timeout evidence"),
+                ref(messagesResult, "Message was sent and callback status is " + message.callbackStatus())));
+        List<String> evidenceIds = evidence.stream().map(EvidenceRef::evidenceId).toList();
+        return new DiagnosticReportDocument(
+                1,
+                diagnosticTaskId,
+                "CALLBACK_TIMEOUT",
+                "The upgrade command was sent but its callback timed out; backend rules allow one approved retry.",
+                List.of(
+                        new DiagnosticReportDocument.ReportItem("TASK_FINAL_FAILURE",
+                                "Upgrade task " + task.id() + " is in FINAL_FAILURE.", List.of(taskResult.evidenceId())),
+                        new DiagnosticReportDocument.ReportItem("CALLBACK_TIMEOUT_CONFIRMED",
+                                "The command was sent and the callback timed out.",
+                                List.of(messagesResult.evidenceId(), logsResult.evidenceId()))),
+                List.of(new DiagnosticReportDocument.ReportItem("RETRY_ELIGIBILITY_RULE",
+                        "Current task, message, device and version facts support a retryable callback timeout.", evidenceIds)),
+                List.of(),
+                List.of(),
+                List.of(),
+                evidence,
+                evidenceIds,
+                planning.eligibility(),
+                planning.plan(),
+                "Review and approve the bound retry plan before it expires.",
+                List.of("trace:" + diagnosticTaskId + ":tools", "trace:" + diagnosticTaskId + ":eligibility",
+                        "trace:" + diagnosticTaskId + ":plan"),
+                new DiagnosticReportDocument.ReportProvenance(modelId, "diagnosis-callback-timeout-v1",
                         "diagnostic-report-v1", generatedAt));
     }
 

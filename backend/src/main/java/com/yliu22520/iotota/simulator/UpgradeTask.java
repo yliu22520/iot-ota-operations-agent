@@ -46,6 +46,12 @@ public class UpgradeTask {
     @Column(nullable = false)
     private long version;
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "max_retries", nullable = false)
+    private int maxRetries;
+
     @Column(nullable = false)
     private boolean simulated;
 
@@ -62,6 +68,8 @@ public class UpgradeTask {
         this.failureCode = failureCode;
         this.failureSummary = failureSummary;
         this.failedAt = failedAt;
+        this.retryCount = 0;
+        this.maxRetries = 3;
         this.simulated = simulated;
     }
 
@@ -72,5 +80,15 @@ public class UpgradeTask {
     public String getFailureCode() { return failureCode; }
     public String getFailureSummary() { return failureSummary; }
     public Instant getFailedAt() { return failedAt; }
+    public long getVersion() { return version; }
+    public int getRetryCount() { return retryCount; }
+    public int getMaxRetries() { return maxRetries; }
     public boolean isSimulated() { return simulated; }
+
+    public void registerRetry() {
+        if (retryCount >= maxRetries) {
+            throw new IllegalStateException("Retry limit reached for upgrade task " + id);
+        }
+        retryCount++;
+    }
 }

@@ -26,6 +26,18 @@ class DiagnosticStateMachineTest {
     }
 
     @Test
+    void permitsTheApprovedRetryExecutionAndVerificationWorkflow() {
+        assertThat(stateMachine.transition(DiagnosticState.REPORT_READY, DiagnosticState.WAITING_APPROVAL))
+                .isEqualTo(DiagnosticState.WAITING_APPROVAL);
+        assertThat(stateMachine.transition(DiagnosticState.WAITING_APPROVAL, DiagnosticState.EXECUTING))
+                .isEqualTo(DiagnosticState.EXECUTING);
+        assertThat(stateMachine.transition(DiagnosticState.EXECUTING, DiagnosticState.VERIFYING))
+                .isEqualTo(DiagnosticState.VERIFYING);
+        assertThat(stateMachine.transition(DiagnosticState.VERIFYING, DiagnosticState.COMPLETED))
+                .isEqualTo(DiagnosticState.COMPLETED);
+    }
+
+    @Test
     void rejectsSkippingInvestigationAndChangingTerminalState() {
         assertThatThrownBy(() -> stateMachine.transition(DiagnosticState.CREATED, DiagnosticState.REPORT_READY))
                 .isInstanceOf(IllegalStateException.class);

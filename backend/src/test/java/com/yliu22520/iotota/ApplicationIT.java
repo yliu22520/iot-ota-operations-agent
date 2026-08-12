@@ -59,11 +59,12 @@ class ApplicationIT {
                 where table_schema = 'public'
                   and table_name in ('device', 'firmware_version', 'upgrade_task', 'failure_log',
                                      'message_state', 'operator_user', 'diagnostic_task', 'diagnostic_report',
-                                     'retry_plan', 'retry_execution', 'knowledge_document', 'audit_event')
+                                     'retry_plan', 'retry_execution', 'simulator_retry_attempt',
+                                     'knowledge_document', 'audit_event')
                 """, Integer.class);
 
-        assertThat(tableCount).isEqualTo(12);
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+        assertThat(tableCount).isEqualTo(13);
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
         assertThat(jdbcTemplate.queryForObject("select count(*) from pg_extension where extname = 'vector'", Integer.class))
                 .isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("select count(*) from upgrade_task", Integer.class)).isEqualTo(2);

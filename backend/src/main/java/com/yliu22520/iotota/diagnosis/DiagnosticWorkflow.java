@@ -17,6 +17,7 @@ public class DiagnosticWorkflow {
     private final DiagnosticReportFactory reportFactory;
     private final AuditService auditService;
     private final DiagnosticTaskRepository diagnosticTaskRepository;
+    private final RetryPlanPort retryPlanPort;
     private final Clock clock;
 
     public DiagnosticWorkflow(DiagnosticStateService stateService,
@@ -25,6 +26,7 @@ public class DiagnosticWorkflow {
                               DiagnosticReportFactory reportFactory,
                               AuditService auditService,
                               DiagnosticTaskRepository diagnosticTaskRepository,
+                              RetryPlanPort retryPlanPort,
                               Clock clock) {
         this.stateService = stateService;
         this.toolset = toolset;
@@ -32,6 +34,7 @@ public class DiagnosticWorkflow {
         this.reportFactory = reportFactory;
         this.auditService = auditService;
         this.diagnosticTaskRepository = diagnosticTaskRepository;
+        this.retryPlanPort = retryPlanPort;
         this.clock = clock;
     }
 
@@ -62,6 +65,11 @@ public class DiagnosticWorkflow {
             recordToolCall(diagnosticTaskId, actor, logs);
             requireSuccess(logs);
 
+            if ("CALLBACK_TIMEOUT".equals(task.data().failureCode())) {
+                executeCallbackTimeoutPath(diagnosticTaskId, actor, task, device, firmware, compatibility, logs);
+                return;
+            }
+
             VersionCompatibilityFacts facts = new VersionCompatibilityFacts(device.data().model(),
                     device.data().currentVersion(), firmware.data().version(), firmware.data().releaseStatus(),
                     firmware.data().compatibleModels());
@@ -87,6 +95,48 @@ public class DiagnosticWorkflow {
                     "diagnosticWorkflow", "workflow:" + diagnosticTaskId, "diagnosis.workflow",
                     Instant.now(clock), "Diagnostic workflow failed before a complete report was generated");
             completeAsIncomplete(diagnosticTaskId, actor, workflowFailure);
+        }
+    }
+
+    private void executeCallbackTimeoutPath(
+            UUID diagnosticTaskId,
+            String actor,
+            StructuredToolResult<UpgradeTaskToolData> task,
+            StructuredToolResult<DeviceStateToolData> device,
+            StructuredToolResult<FirmwareVersionToolData> firmware,
+            StructuredToolResult<VersionCompatibilityDecision> compatibility,
+            StructuredToolResult<java.util.List<FailureLogToolData>> logs) {
+        StructuredToolResult<java.util.List<MessageStateToolData>> messages =
+                toolset.getMessageStates(task.data().id());
+        recordToolCall(diagnosticTaskId, actor, messages);
+        requireSuccess(messages);
+        if (messages.data().isEmpty()) {
+            throw new DiagnosticEvidenceUnavailableException(StructuredToolResult.failure(
+                    "getMessageStates", messages.evidenceId(), messages.source(), messages.observedAt(),
+                    "No message state was recorded for the callback timeout"));
+        }
+        MessageStateToolData latestMessage = messages.data().get(messages.data().size() - 1);
+        java.util.List<String> evidenceRefs = java.util.List.of(task.evidenceId(), device.evidenceId(),
+                firmware.evidenceId(), compatibility.evidenceId(), logs.evidenceId(), messages.evidenceId());
+        RetryPlanningResult planning = retryPlanPort.evaluateAndCreate(new RetryPlanRequest(
+                diagnosticTaskId, task.data().id(), task.data().taskVersion(), task.data().status(),
+                task.data().failureCode(), device.data().online(), compatibility.data().compatible(),
+                task.data().retryCount(), task.data().maxRetries(), 1, latestMessage.sendStatus(),
+                latestMessage.callbackStatus(), firmware.data().version(), evidenceRefs, actor));
+
+        DiagnosticReportDocument report = reportFactory.buildCallbackTimeout(diagnosticTaskId, task, device,
+                firmware, compatibility, logs, messages, planning, chatModel.modelId(), Instant.now(clock));
+        stateService.persistReportAndMarkReady(diagnosticTaskId, report, actor);
+        if (planning.plan() != null) {
+            stateService.transition(diagnosticTaskId, DiagnosticState.WAITING_APPROVAL, actor);
+            auditService.append(actor, "RETRY_PLAN", planning.plan().planId().toString(),
+                    "RETRY_PLAN_CREATED", "PENDING_APPROVAL", diagnosticTaskId.toString(),
+                    "A fifteen-minute retry plan was bound to the current task snapshot", Map.of(
+                            "planVersion", planning.plan().planVersion(),
+                            "expiresAt", planning.plan().expiresAt().toString(),
+                            "upgradeTaskId", planning.plan().upgradeTaskId().toString()));
+        } else {
+            stateService.transition(diagnosticTaskId, DiagnosticState.COMPLETED, actor);
         }
     }
 

@@ -18,6 +18,7 @@ public record DiagnosticReportDocument(
         List<EvidenceRef> evidenceRefs,
         List<String> rootCauseEvidenceRefs,
         RetryEligibility retryEligibility,
+        RetryPlanDocument retryPlan,
         String nextAction,
         List<String> decisionTraceRefs,
         ReportProvenance provenance) {

@@ -4,5 +4,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record UpgradeTaskToolData(UUID id, String status, String failureCode, String failureSummary,
-                                  Instant failedAt, String deviceId, String firmwareVersionId) {
+                                  Instant failedAt, String deviceId, String firmwareVersionId,
+                                  long taskVersion, int retryCount, int maxRetries) {
 }

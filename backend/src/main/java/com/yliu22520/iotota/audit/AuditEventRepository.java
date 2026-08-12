@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface AuditEventRepository extends JpaRepository<AuditEvent, UUID> {
 
     List<AuditEvent> findByObjectTypeAndObjectIdOrderByOccurredAtAsc(String objectType, String objectId);
+
+    List<AuditEvent> findByCorrelationIdOrderByOccurredAtAsc(String correlationId);
 }

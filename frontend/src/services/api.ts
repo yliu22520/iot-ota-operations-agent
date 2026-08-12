@@ -68,7 +68,8 @@ export interface TaskDetail {
   simulated: boolean
 }
 
-export type DiagnosticState = 'CREATED' | 'INVESTIGATING' | 'REPORT_READY' | 'COMPLETED' | 'INCOMPLETE'
+export type DiagnosticState = 'CREATED' | 'INVESTIGATING' | 'REPORT_READY' | 'WAITING_APPROVAL' |
+  'EXECUTING' | 'VERIFYING' | 'COMPLETED' | 'INCOMPLETE'
 
 export interface EvidenceRef {
   evidenceId: string
@@ -89,7 +90,9 @@ export interface DiagnosticReport {
   rootCauseCode: string
   conclusion: string
   facts: ReportItem[]
+  ruleConclusions: ReportItem[]
   inferences: ReportItem[]
+  knowledgeSuggestions: ReportItem[]
   exclusions: ReportItem[]
   unknowns: ReportItem[]
   evidenceGaps: ReportItem[]
@@ -101,14 +104,66 @@ export interface DiagnosticReport {
     reasonCode: string
     reason: string
   }
+  retryPlan: RetryPlan | null
   nextAction: string
   decisionTraceRefs: string[]
   provenance: {
     modelId: string
     promptVersion: string
     schemaVersion: string
+    embeddingModelId: string
+    embeddingModelRevision: string
+    embeddingModelSha256: string
     generatedAt: string
   }
+}
+
+export interface RetryPlan {
+  planId: string
+  planVersion: number
+  diagnosticTaskId: string
+  upgradeTaskId: string
+  taskVersion: number
+  taskStatus: string
+  targetVersion: string
+  failureCode: string
+  retryCount: number
+  maxRetries: number
+  deviceOnline: boolean
+  versionCompatible: boolean
+  messageSendStatus: string
+  callbackStatus: string
+  impactScope: string
+  preconditions: string[]
+  evidenceRefs: string[]
+  status: string
+  createdAt: string
+  expiresAt: string
+}
+
+export interface RetryExecutionView {
+  diagnosticTaskId: string
+  planId: string
+  planVersion: number
+  executionId: string
+  diagnosticState: DiagnosticState
+  executionStatus: string
+  verificationStatus: string
+  idempotencyKey: string
+  idempotentReplay: boolean
+  updatedAt: string
+}
+
+export interface AuditEventView {
+  id: string
+  occurredAt: string
+  actor: string
+  objectType: string
+  objectId: string
+  action: string
+  result: string
+  summary: string
+  metadata: Record<string, unknown>
 }
 
 export interface DiagnosticTaskView {
@@ -188,4 +243,20 @@ export async function getActiveDiagnosis(upgradeTaskId: string) {
     }
     throw error
   }
+}
+
+export async function approveRetryPlan(diagnosticTaskId: string, planVersion: number, acknowledged: boolean) {
+  await getCsrf()
+  const response = await client.post<RetryExecutionView>(
+    `/v1/diagnostic-tasks/${encodeURIComponent(diagnosticTaskId)}/retry-plan/approve`,
+    { planVersion, acknowledged },
+  )
+  return response.data
+}
+
+export async function getAuditEvents(diagnosticTaskId: string) {
+  const response = await client.get<AuditEventView[]>(
+    `/v1/diagnostic-tasks/${encodeURIComponent(diagnosticTaskId)}/audit-events`,
+  )
+  return response.data
 }

@@ -4,6 +4,9 @@ public enum DiagnosticState {
     CREATED,
     INVESTIGATING,
     REPORT_READY,
+    WAITING_APPROVAL,
+    EXECUTING,
+    VERIFYING,
     COMPLETED,
     INCOMPLETE
 }

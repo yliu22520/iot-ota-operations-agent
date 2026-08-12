@@ -15,4 +15,6 @@ public interface DiagnosticToolset {
     StructuredToolResult<VersionCompatibilityDecision> getVersionCompatibility(UUID upgradeTaskId);
 
     StructuredToolResult<List<FailureLogToolData>> getFailureLogs(UUID upgradeTaskId);
+
+    StructuredToolResult<List<MessageStateToolData>> getMessageStates(UUID upgradeTaskId);
 }

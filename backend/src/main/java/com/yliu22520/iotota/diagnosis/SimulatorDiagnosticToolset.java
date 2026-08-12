@@ -6,6 +6,8 @@ import com.yliu22520.iotota.simulator.FailureLog;
 import com.yliu22520.iotota.simulator.FailureLogRepository;
 import com.yliu22520.iotota.simulator.FirmwareVersion;
 import com.yliu22520.iotota.simulator.FirmwareVersionRepository;
+import com.yliu22520.iotota.simulator.MessageState;
+import com.yliu22520.iotota.simulator.MessageStateRepository;
 import com.yliu22520.iotota.simulator.UpgradeTask;
 import com.yliu22520.iotota.simulator.UpgradeTaskRepository;
 import org.springframework.stereotype.Service;
@@ -24,11 +26,13 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
     private static final String SOURCE_FIRMWARE = "simulator.firmware-catalogue";
     private static final String SOURCE_COMPATIBILITY = "backend.version-compatibility-rule";
     private static final String SOURCE_LOG = "simulator.failure-log";
+    private static final String SOURCE_MESSAGE = "simulator.message-state";
 
     private final UpgradeTaskRepository upgradeTaskRepository;
     private final DeviceRepository deviceRepository;
     private final FirmwareVersionRepository firmwareVersionRepository;
     private final FailureLogRepository failureLogRepository;
+    private final MessageStateRepository messageStateRepository;
     private final VersionCompatibilityRule compatibilityRule;
     private final Clock clock;
 
@@ -36,12 +40,14 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
                                       DeviceRepository deviceRepository,
                                       FirmwareVersionRepository firmwareVersionRepository,
                                       FailureLogRepository failureLogRepository,
+                                      MessageStateRepository messageStateRepository,
                                       VersionCompatibilityRule compatibilityRule,
                                       Clock clock) {
         this.upgradeTaskRepository = upgradeTaskRepository;
         this.deviceRepository = deviceRepository;
         this.firmwareVersionRepository = firmwareVersionRepository;
         this.failureLogRepository = failureLogRepository;
+        this.messageStateRepository = messageStateRepository;
         this.compatibilityRule = compatibilityRule;
         this.clock = clock;
     }
@@ -54,7 +60,8 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
                 .map(task -> StructuredToolResult.success("getUpgradeTask", "upgrade-task:" + task.getId(),
                         SOURCE_TASK, observedAt, new UpgradeTaskToolData(task.getId(), task.getStatus().name(),
                                 task.getFailureCode(), task.getFailureSummary(), task.getFailedAt(),
-                                task.getDevice().getId(), task.getTargetFirmwareVersion().getId())))
+                                task.getDevice().getId(), task.getTargetFirmwareVersion().getId(),
+                                task.getVersion(), task.getRetryCount(), task.getMaxRetries())))
                 .orElseGet(() -> StructuredToolResult.failure("getUpgradeTask", "upgrade-task:" + upgradeTaskId,
                         SOURCE_TASK, observedAt, "Upgrade task not found"));
     }
@@ -113,6 +120,18 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
                         SOURCE_LOG, observedAt, "Upgrade task not found"));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public StructuredToolResult<List<MessageStateToolData>> getMessageStates(UUID upgradeTaskId) {
+        Instant observedAt = Instant.now(clock);
+        return upgradeTaskRepository.findById(upgradeTaskId)
+                .map(task -> StructuredToolResult.success("getMessageStates", "message-state:" + task.getId(),
+                        SOURCE_MESSAGE, observedAt, messageStateRepository.findByUpgradeTaskOrderByObservedAtAsc(task)
+                                .stream().map(this::toMessageStateData).toList()))
+                .orElseGet(() -> StructuredToolResult.failure("getMessageStates", "message-state:" + upgradeTaskId,
+                        SOURCE_MESSAGE, observedAt, "Upgrade task not found"));
+    }
+
     private DeviceStateToolData toDeviceData(Device device) {
         return new DeviceStateToolData(device.getId(), device.getSerialNumber(), device.getModel(),
                 device.getCurrentVersion(), device.isOnline(), device.getStorageAvailableMb());
@@ -126,5 +145,10 @@ public class SimulatorDiagnosticToolset implements DiagnosticToolset {
     private FailureLogToolData toFailureLogData(FailureLog log) {
         return new FailureLogToolData(log.getId(), log.getObservedAt(), log.getLevel(), log.getCode(),
                 log.getMessage(), log.getSource());
+    }
+
+    private MessageStateToolData toMessageStateData(MessageState message) {
+        return new MessageStateToolData(message.getId(), message.getMessageType(), message.getSendStatus(),
+                message.getCallbackStatus(), message.getObservedAt(), message.getDetail());
     }
 }
