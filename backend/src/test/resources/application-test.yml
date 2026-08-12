@@ -1,0 +1,6 @@
+# The real model key is supplied only when an explicit DeepSeek evaluation is run.
+# This placeholder keeps the Spring AI auto-configuration deterministic in CI.
+spring:
+  ai:
+    deepseek:
+      api-key: test-key

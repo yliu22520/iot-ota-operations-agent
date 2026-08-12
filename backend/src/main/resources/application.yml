@@ -18,6 +18,13 @@ spring:
           time_zone: UTC
   jackson:
     default-property-inclusion: non_null
+diagnosis:
+  model:
+    provider: ${DIAGNOSTIC_MODEL_PROVIDER:controlled}
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+  evaluation:
+    enabled: ${DIAGNOSTIC_EVALUATION_ENABLED:false}
+    output-directory: ${DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY:${java.io.tmpdir}/iot-ota-evaluation}
 server:
   servlet:
     session:
