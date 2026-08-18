@@ -15,7 +15,17 @@ jobs:
           java-version: '17'
           cache: maven
       - run: mvn -f backend/pom.xml test
-      - run: mvn -f backend/pom.xml -Pintegration verify
+      - name: Run backend integration tests
+        run: mvn -f backend/pom.xml -Pintegration verify
+      - name: Print integration test reports on failure
+        if: failure()
+        run: |
+          echo '=== Failsafe reports ==='
+          if [ -d backend/target/failsafe-reports ]; then
+            find backend/target/failsafe-reports -maxdepth 1 -type f -name '*.txt' -print -exec cat {} \;
+          else
+            echo 'No backend/target/failsafe-reports directory was created.'
+          fi
 
   frontend:
     runs-on: ubuntu-latest
