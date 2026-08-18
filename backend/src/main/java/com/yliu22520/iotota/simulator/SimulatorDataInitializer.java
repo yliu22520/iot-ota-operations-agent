@@ -32,8 +32,12 @@ public class SimulatorDataInitializer implements ApplicationRunner {
     }
 
     @Override
-    @Transactional
     public void run(ApplicationArguments args) {
+        seed();
+    }
+
+    @Transactional
+    public void seed() {
         Device deviceIncompatible = deviceRepository.findById("device-sim-001")
                 .orElseGet(() -> deviceRepository.save(new Device(
                         "device-sim-001", "SIM-EDGE-001", "EDGE-CAMERA-A", "1.0.0", true, 2048, true, SEED_TIME)));
