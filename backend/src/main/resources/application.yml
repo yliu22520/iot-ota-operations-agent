@@ -45,6 +45,13 @@ demo:
   operator:
     username: ${DEMO_OPERATOR_USERNAME:demo-operator}
     password: ${DEMO_OPERATOR_PASSWORD:demo-password}
+  live-diagnosis:
+    daily-limit: ${DEMO_LIVE_DIAGNOSIS_DAILY_LIMIT:20}
+    per-minute-limit: ${DEMO_LIVE_DIAGNOSIS_PER_MINUTE_LIMIT:3}
+  data-reset:
+    enabled: ${DEMO_DATA_RESET_ENABLED:true}
+    interval-ms: ${DEMO_DATA_RESET_INTERVAL_MS:86400000}
+    initial-delay-ms: ${DEMO_DATA_RESET_INITIAL_DELAY_MS:86400000}
 knowledge:
   embedding:
     model-id: intfloat/multilingual-e5-small
