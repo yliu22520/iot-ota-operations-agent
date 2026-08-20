@@ -23,19 +23,22 @@ public class DiagnosticTaskService {
     private final AuditService auditService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final LiveDiagnosticRateLimiter liveDiagnosticRateLimiter;
 
     public DiagnosticTaskService(DiagnosticTaskRepository diagnosticTaskRepository,
                                  DiagnosticReportRepository diagnosticReportRepository,
                                  UpgradeTaskRepository upgradeTaskRepository,
                                  AuditService auditService,
                                  ApplicationEventPublisher eventPublisher,
-                                 Clock clock) {
+                                 Clock clock,
+                                 LiveDiagnosticRateLimiter liveDiagnosticRateLimiter) {
         this.diagnosticTaskRepository = diagnosticTaskRepository;
         this.diagnosticReportRepository = diagnosticReportRepository;
         this.upgradeTaskRepository = upgradeTaskRepository;
         this.auditService = auditService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.liveDiagnosticRateLimiter = liveDiagnosticRateLimiter;
     }
 
     @Transactional
@@ -45,6 +48,9 @@ public class DiagnosticTaskService {
         Optional<DiagnosticTask> active = diagnosticTaskRepository.findActiveByUpgradeTaskId(upgradeTaskId);
         if (active.isPresent()) {
             throw new DiagnosticAlreadyActiveException(active.get().getId());
+        }
+        if (!"CALLBACK_TIMEOUT".equals(upgradeTask.getFailureCode())) {
+            liveDiagnosticRateLimiter.acquire();
         }
 
         Instant now = Instant.now(clock);

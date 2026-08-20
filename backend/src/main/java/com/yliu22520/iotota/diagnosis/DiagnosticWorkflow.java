@@ -100,6 +100,8 @@ public class DiagnosticWorkflow {
                     "Diagnostic reached terminal state", Map.of("state", DiagnosticState.COMPLETED.name()));
         } catch (DiagnosticEvidenceUnavailableException exception) {
             completeAsIncomplete(diagnosticTaskId, actor, exception.result());
+        } catch (DiagnosticModelUnavailableException exception) {
+            completeAsIncomplete(diagnosticTaskId, actor, modelFailure(diagnosticTaskId, exception));
         } catch (Exception exception) {
             StructuredToolResult<Object> workflowFailure = StructuredToolResult.failure(
                     "diagnosticWorkflow", "workflow:" + diagnosticTaskId, "diagnosis.workflow",
@@ -179,6 +181,14 @@ public class DiagnosticWorkflow {
 
     private void requireSuccess(StructuredToolResult<?> result) {
         if (!result.success()) throw new DiagnosticEvidenceUnavailableException(result);
+    }
+
+    private StructuredToolResult<Object> modelFailure(UUID diagnosticTaskId,
+                                                      DiagnosticModelUnavailableException exception) {
+        String errorCode = "MISSING_DEEPSEEK_API_KEY".equals(exception.getMessage())
+                ? "MISSING_DEEPSEEK_API_KEY" : "REAL_MODEL_CALL_FAILED";
+        return StructuredToolResult.failure("diagnosticModel", "model:" + diagnosticTaskId,
+                "diagnosis.model", Instant.now(clock), errorCode);
     }
 
     private void completeAsIncomplete(UUID diagnosticTaskId, String actor, StructuredToolResult<?> failedTool) {

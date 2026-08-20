@@ -4,6 +4,7 @@ import com.yliu22520.iotota.audit.AuditEvent;
 import com.yliu22520.iotota.audit.AuditEventRepository;
 import com.yliu22520.iotota.diagnosis.DiagnosticReport;
 import com.yliu22520.iotota.diagnosis.DiagnosticReportDocument;
+import com.yliu22520.iotota.diagnosis.DiagnosticModelConfiguration;
 import com.yliu22520.iotota.diagnosis.DiagnosticReportRepository;
 import com.yliu22520.iotota.diagnosis.DiagnosticTask;
 import com.yliu22520.iotota.diagnosis.DiagnosticTaskNotFoundException;
@@ -23,13 +24,16 @@ public class WorkbenchTelemetryService {
     private final DiagnosticTaskRepository diagnosticTaskRepository;
     private final DiagnosticReportRepository diagnosticReportRepository;
     private final AuditEventRepository auditEventRepository;
+    private final DiagnosticModelConfiguration modelConfiguration;
 
     public WorkbenchTelemetryService(DiagnosticTaskRepository diagnosticTaskRepository,
                                      DiagnosticReportRepository diagnosticReportRepository,
-                                     AuditEventRepository auditEventRepository) {
+                                     AuditEventRepository auditEventRepository,
+                                     DiagnosticModelConfiguration modelConfiguration) {
         this.diagnosticTaskRepository = diagnosticTaskRepository;
         this.diagnosticReportRepository = diagnosticReportRepository;
         this.auditEventRepository = auditEventRepository;
+        this.modelConfiguration = modelConfiguration;
     }
 
     @Transactional(readOnly = true)
@@ -73,18 +77,18 @@ public class WorkbenchTelemetryService {
     private WorkbenchDtos.ModelConfiguration toModelConfiguration(DiagnosticReportDocument report) {
         DiagnosticReportDocument.ReportProvenance provenance = report == null ? null : report.provenance();
         return new WorkbenchDtos.ModelConfiguration(
-                "controlled",
-                provenance == null ? "controlled-diagnostic-explainer-v1" : provenance.modelId(),
-                "CONTROLLED",
-                provenance == null ? "diagnosis-controlled-v1" : provenance.promptVersion(),
-                "diagnostic-tools-v1",
-                0.0d,
-                1.0d,
+                modelConfiguration.provider(),
+                provenance == null ? modelConfiguration.modelId() : provenance.modelId(),
+                modelConfiguration.reasoningTier(),
+                provenance == null ? modelConfiguration.promptVersion() : provenance.promptVersion(),
+                modelConfiguration.toolSchemaVersion(),
+                modelConfiguration.temperature(),
+                modelConfiguration.topP(),
                 provenance == null ? "diagnostic-report-v1" : provenance.schemaVersion(),
                 provenance == null ? "" : provenance.embeddingModelId(),
                 provenance == null ? "" : provenance.embeddingModelRevision(),
                 provenance == null ? "" : provenance.embeddingModelSha256(),
-                false);
+                modelConfiguration.automaticFallbackEnabled());
     }
 
     private WorkbenchDtos.ToolEvent toToolEvent(AuditEvent event) {

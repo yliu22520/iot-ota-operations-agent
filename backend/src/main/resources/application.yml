@@ -45,6 +45,8 @@ demo:
   operator:
     username: ${DEMO_OPERATOR_USERNAME:demo-operator}
     password: ${DEMO_OPERATOR_PASSWORD:demo-password}
+  # The live quota is global to this backend process. Use one backend instance for the demo;
+  # multi-instance deployment requires a shared quota store before it is enabled.
   live-diagnosis:
     daily-limit: ${DEMO_LIVE_DIAGNOSIS_DAILY_LIMIT:20}
     per-minute-limit: ${DEMO_LIVE_DIAGNOSIS_PER_MINUTE_LIMIT:3}

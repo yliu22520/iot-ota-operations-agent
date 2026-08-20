@@ -23,18 +23,14 @@ import java.util.UUID;
 public class DiagnosticTaskController {
 
     private final DiagnosticTaskService service;
-    private final LiveDiagnosticRateLimiter liveDiagnosticRateLimiter;
 
-    public DiagnosticTaskController(DiagnosticTaskService service,
-                                    LiveDiagnosticRateLimiter liveDiagnosticRateLimiter) {
+    public DiagnosticTaskController(DiagnosticTaskService service) {
         this.service = service;
-        this.liveDiagnosticRateLimiter = liveDiagnosticRateLimiter;
     }
 
     @PostMapping
     public ResponseEntity<DiagnosticApiModels.StartResponse> start(@RequestBody StartRequest request,
                                                                     Authentication authentication) {
-        liveDiagnosticRateLimiter.acquire();
         DiagnosticApiModels.StartResponse response = service.start(request.upgradeTaskId(),
                 authentication.getName());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
