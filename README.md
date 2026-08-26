@@ -10,6 +10,20 @@ Issue #2 交付的是第一条可运行基础路径：Spring Boot 模块化单�
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+如果 Docker 内的 Maven 或模型下载无法直连，而宿主机代理监听在 `127.0.0.1:7890`，先确认代理软件已开启 Allow LAN，然后在 PowerShell 7 中传入构建代理：
+
+```powershell
+$env:DOCKER_HTTP_PROXY = "http://host.docker.internal:7890"
+$env:DOCKER_HTTPS_PROXY = $env:DOCKER_HTTP_PROXY
+$env:DOCKER_MAVEN_PROXY_HOST = "host.docker.internal"
+$env:DOCKER_MAVEN_PROXY_PORT = "7890"
+$env:DOCKER_NO_PROXY = "localhost,127.0.0.1,postgres"
+$env:DOCKER_JAVA_TOOL_OPTIONS = "-Xmx1536m -Dhttp.proxyHost=host.docker.internal -Dhttp.proxyPort=7890 -Dhttps.proxyHost=host.docker.internal -Dhttps.proxyPort=7890"
+docker compose -f infra/docker-compose.yml up --build
+```
+
+前五个变量用于镜像构建，`DOCKER_JAVA_TOOL_OPTIONS` 还负责运行时首次下载 DJL native runtime；代理主机和端口不会写入运行时以外的配置。当前配置假设代理不需要用户名和密码；如果代理启用了认证，需要另外配置凭据传递方式。
+
 打开 <http://localhost:8081>，使用演示运维账号登录：
 
 - 账号：`demo-operator`

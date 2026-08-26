@@ -17,6 +17,12 @@ services:
   backend:
     build:
       context: ../backend
+      args:
+        HTTP_PROXY: ${DOCKER_HTTP_PROXY:-}
+        HTTPS_PROXY: ${DOCKER_HTTPS_PROXY:-}
+        NO_PROXY: ${DOCKER_NO_PROXY:-}
+        MAVEN_PROXY_HOST: ${DOCKER_MAVEN_PROXY_HOST:-}
+        MAVEN_PROXY_PORT: ${DOCKER_MAVEN_PROXY_PORT:-}
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ota_operations
       SPRING_DATASOURCE_USERNAME: ota
@@ -24,12 +30,14 @@ services:
       DEMO_OPERATOR_USERNAME: ${DEMO_OPERATOR_USERNAME:-demo-operator}
       DEMO_OPERATOR_PASSWORD: ${DEMO_OPERATOR_PASSWORD:-demo-password}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      DIAGNOSTIC_MODEL_PROVIDER: ${DIAGNOSTIC_MODEL_PROVIDER:-controlled}
+      JAVA_TOOL_OPTIONS: ${DOCKER_JAVA_TOOL_OPTIONS:--Xmx1536m}
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "127.0.0.1:8080:8080"
-    mem_limit: 1g
+    mem_limit: 3g
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/actuator/health || exit 1"]
       interval: 10s

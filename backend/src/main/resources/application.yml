@@ -1,6 +1,9 @@
 spring:
   application:
     name: iot-ota-operations-agent
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ota_operations}
     username: ${SPRING_DATASOURCE_USERNAME:ota}
