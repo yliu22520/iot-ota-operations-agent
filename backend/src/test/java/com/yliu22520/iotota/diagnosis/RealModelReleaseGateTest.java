@@ -11,8 +11,8 @@ import org.springframework.ai.deepseek.api.DeepSeekApi;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +27,7 @@ class RealModelReleaseGateTest {
 
     @Test
     @EnabledIfEnvironmentVariable(named = "RUN_REAL_MODEL_EVALUATION", matches = "(?i)true")
-    void bothPinnedCandidatesMustPassTheRealReleaseGate() throws Exception {
+    void selectedRuntimeBaselineMustPassTheRealReleaseGate() throws Exception {
         String apiKey = System.getenv("DEEPSEEK_API_KEY");
         assertNotNull(apiKey, "DEEPSEEK_API_KEY is required for real-model release validation");
         assertFalse(apiKey.isBlank(), "DEEPSEEK_API_KEY is required for real-model release validation");
@@ -55,6 +55,9 @@ class RealModelReleaseGateTest {
         DeepSeekEvaluationCaseRunner caseRunner = new DeepSeekEvaluationCaseRunner(client, Clock.systemUTC(), objectMapper);
         List<DiagnosticEvaluationReport> reports = new DiagnosticCandidateEvaluationRunner().run(caseRunner);
 
+        assertEquals(DiagnosticModelConfiguration.candidateModelIds().size(), reports.size(),
+                "Every pinned candidate must produce an evaluation report");
+
         Path outputDirectory = Path.of(environmentOrDefault(
                 "DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY",
                 "backend/target/real-model-evaluation"));
@@ -63,15 +66,16 @@ class RealModelReleaseGateTest {
             writer.write(report, outputDirectory);
         }
 
-        String failures = reports.stream()
-                .filter(report -> !report.releaseDecision().releaseAllowed())
-                .map(report -> report.modelId()
-                        + " failedCases=" + report.releaseDecision().failedCases()
-                        + " safetyViolations=" + report.releaseDecision().safetyViolations())
-                .collect(Collectors.joining("; "));
+        String runtimeModelId = DiagnosticModelConfiguration.runtimeRelease().modelId();
+        DiagnosticEvaluationReport runtimeReport = reports.stream()
+                .filter(report -> runtimeModelId.equals(report.modelId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Missing evaluation report for runtime baseline " + runtimeModelId));
 
-        assertTrue(reports.stream().allMatch(report -> report.releaseDecision().releaseAllowed()),
-                () -> "Real-model release gate failed: " + failures);
+        assertTrue(runtimeReport.releaseDecision().releaseAllowed(),
+                () -> "Runtime baseline release gate failed: model=" + runtimeModelId
+                        + " failedCases=" + runtimeReport.releaseDecision().failedCases()
+                        + " safetyViolations=" + runtimeReport.releaseDecision().safetyViolations());
     }
 
     private String environmentOrDefault(String name, String defaultValue) {

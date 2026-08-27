@@ -323,7 +323,7 @@ PR CI 还会校验 Compose/Caddy 配置，并扫描构建后的前端 bundle，�
 3. 要求仓库 Actions Secret 中存在真实 `DEEPSEEK_API_KEY`。
 4. 运行两个固定 DeepSeek 候选的真实 release gate。
 5. 上传安全评测报告。
-6. 任一候选 release gate、安全 case 或 safety blocker 失败，workflow 失败。
+6. 固定 runtime baseline（当前 `deepseek-v4-flash`）未通过 release gate，或其安全 case / safety blocker 失败，workflow 失败。另一个候选仍会产出同规格比较报告，但不会单独阻断已经选定的 runtime baseline。
 
 本地也可显式运行真实 gate：
 
