@@ -62,10 +62,19 @@ RUN --mount=type=cache,target=/download \
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system app \
+    && useradd --system --gid app --create-home --home-dir /home/app app
 COPY --from=build /workspace/target/iot-ota-operations-agent-0.1.0-SNAPSHOT.jar app.jar
 COPY --from=knowledge-model /models /app/models
+RUN mkdir -p /app/models/cache \
+    && chown -R app:app /app /home/app
 ENV KNOWLEDGE_ONNX_MODEL_URI=file:/app/models/multilingual-e5-small/model.onnx \
     KNOWLEDGE_ONNX_TOKENIZER_URI=file:/app/models/multilingual-e5-small/tokenizer.json \
     KNOWLEDGE_ONNX_CACHE_DIRECTORY=/app/models/cache
+USER app
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

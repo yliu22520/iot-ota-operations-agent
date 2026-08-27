@@ -29,6 +29,7 @@ diagnosis:
     enabled: ${DIAGNOSTIC_EVALUATION_ENABLED:false}
     output-directory: ${DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY:${java.io.tmpdir}/iot-ota-evaluation}
 server:
+  forward-headers-strategy: framework
   servlet:
     session:
       timeout: 30m

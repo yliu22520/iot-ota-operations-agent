@@ -1,0 +1,97 @@
+name: Release Validation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Backend unit and architecture tests
+        run: mvn -f backend/pom.xml test
+
+      - name: Backend PostgreSQL integration tests
+        run: mvn -f backend/pom.xml -Pintegration verify
+
+      - name: Frontend deterministic tests
+        run: |
+          npm ci --prefix frontend --no-audit --no-fund
+          npm --prefix frontend test -- --run
+          npm --prefix frontend run build
+
+      - name: Ensure backend secret names are absent from browser bundle
+        run: |
+          if grep -R -E 'DEEPSEEK_API_KEY|POSTGRES_PASSWORD|DEMO_OPERATOR_PASSWORD' frontend/dist; then
+            echo 'Backend-only secret name found in frontend/dist.' >&2
+            exit 1
+          fi
+
+      - name: Validate Docker Compose syntax
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml config >/dev/null
+
+      - name: Validate Caddy configuration
+        run: |
+          docker run --rm \
+            -e PUBLIC_DOMAIN=demo.example.test \
+            -e CADDY_ACME_EMAIL=ops@example.test \
+            -v "$PWD/infra/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.8.4-alpine \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+      - name: Ensure example environment cannot be used as a public release
+        run: |
+          if sh infra/validate-public-env.sh infra/.env.example; then
+            echo '.env.example must not pass public deployment validation.' >&2
+            exit 1
+          fi
+
+  real-model-gate:
+    needs: deterministic
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      RUN_REAL_MODEL_EVALUATION: 'true'
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY: ${{ github.workspace }}/backend/target/real-model-evaluation
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Require a real DeepSeek credential
+        shell: bash
+        run: |
+          if [ -z "${DEEPSEEK_API_KEY}" ]; then
+            echo 'Release validation blocked: DEEPSEEK_API_KEY Actions Secret is not configured.' >&2
+            exit 1
+          fi
+
+      - name: Run real DeepSeek release gate
+        run: mvn -f backend/pom.xml -Dtest=RealModelReleaseGateTest test
+
+      - name: Upload safe evaluation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-model-evaluation
+          path: backend/target/real-model-evaluation/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,27 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: ota_operations
+      POSTGRES_USER: ota
+      POSTGRES_PASSWORD: local-demo-postgres-password
+
+  backend:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ota_operations
+      SPRING_DATASOURCE_USERNAME: ota
+      SPRING_DATASOURCE_PASSWORD: local-demo-postgres-password
+      DEMO_OPERATOR_USERNAME: demo-operator
+      DEMO_OPERATOR_PASSWORD: demo-password
+      SESSION_COOKIE_SECURE: "false"
+      DIAGNOSTIC_MODEL_PROVIDER: controlled
+      DEEPSEEK_API_KEY: ""
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  frontend:
+    ports:
+      - "127.0.0.1:8081:80"
+
+  caddy:
+    profiles:
+      - public-edge
