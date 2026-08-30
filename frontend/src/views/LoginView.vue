@@ -8,7 +8,7 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const submitting = ref(false)
-const form = reactive({ username: 'demo-operator', password: 'demo-password' })
+const form = reactive({ username: 'demo-operator', password: '' })
 
 async function submit() {
   submitting.value = true

@@ -14,7 +14,7 @@ describe('PublicSummaryView', () => {
   beforeEach(() => {
     vi.mocked(listPublicSummaries).mockResolvedValue({
       items: [{
-        caseId: 'version-incompatible',
+        caseId: 'VERSION_INCOMPATIBLE',
         title: '版本不兼容：禁止重试',
         scenario: '目标固件与设备型号不匹配',
         conclusion: '后端规则确认禁止重试。',
