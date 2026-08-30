@@ -16,7 +16,7 @@ class LiveDiagnosticRateLimiterTest {
     @Test
     void rejectsTheFourthLiveDiagnosisWithinOneMinute() {
         MutableClock clock = new MutableClock(Instant.parse("2026-08-18T00:00:00Z"));
-        LiveDiagnosticRateLimiter limiter = new LiveDiagnosticRateLimiter(clock, "deepseek", 20, 3);
+        LiveDiagnosticRateLimiter limiter = new LiveDiagnosticRateLimiter(clock, "gemini", 20, 3);
 
         limiter.acquire();
         limiter.acquire();
@@ -35,7 +35,7 @@ class LiveDiagnosticRateLimiterTest {
     @Test
     void resetsDailyQuotaAtUtcMidnight() {
         MutableClock clock = new MutableClock(Instant.parse("2026-08-18T23:59:50Z"));
-        LiveDiagnosticRateLimiter limiter = new LiveDiagnosticRateLimiter(clock, "deepseek", 2, 20);
+        LiveDiagnosticRateLimiter limiter = new LiveDiagnosticRateLimiter(clock, "gemini", 2, 20);
 
         limiter.acquire();
         limiter.acquire();
@@ -49,7 +49,7 @@ class LiveDiagnosticRateLimiterTest {
     @Test
     void controlledModelDoesNotConsumePublicDemoQuota() {
         MutableClock clock = new MutableClock(Instant.parse("2026-08-18T00:00:00Z"));
-        LiveDiagnosticRateLimiter limiter = new LiveDiagnosticRateLimiter(clock, "controlled", 1, 1);
+        LiveDiagnosticRateLimiter limiter = new LiveDiagnosticRateLimiter(clock, " CONTROLLED ", 1, 1);
 
         limiter.acquire();
         limiter.acquire();

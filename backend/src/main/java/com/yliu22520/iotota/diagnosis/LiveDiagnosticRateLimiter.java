@@ -27,7 +27,7 @@ public class LiveDiagnosticRateLimiter {
                                      @Value("${demo.live-diagnosis.daily-limit:20}") int dailyLimit,
                                      @Value("${demo.live-diagnosis.per-minute-limit:3}") int minuteLimit) {
         this.clock = clock;
-        this.enabled = "deepseek".equalsIgnoreCase(provider);
+        this.enabled = provider == null || !"controlled".equalsIgnoreCase(provider.trim());
         this.dailyLimit = dailyLimit;
         this.minuteLimit = minuteLimit;
         this.currentDay = LocalDate.now(clock.withZone(ZoneOffset.UTC));

@@ -85,7 +85,7 @@ class PublicDemoSecurityIT {
                 .andExpect(jsonPath("$.items[0].simulated").value(true))
                 .andExpect(jsonPath("$.items[0].diagnosticTaskId").doesNotExist())
                 .andExpect(content().string(not(containsString("reasoning_content"))))
-                .andExpect(content().string(not(containsString("DEEPSEEK_API_KEY"))))
+                .andExpect(content().string(not(containsString("GEMINI_API_KEY"))))
                 .andExpect(content().string(not(containsString("retry-plan:"))));
 
         mockMvc.perform(get("/api/v1/workbench/tasks"))

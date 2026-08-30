@@ -27,7 +27,7 @@ require_value() {
 for key in \
   PUBLIC_DOMAIN CADDY_ACME_EMAIL POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD \
   DEMO_OPERATOR_USERNAME DEMO_OPERATOR_PASSWORD SESSION_COOKIE_SECURE \
-  DIAGNOSTIC_MODEL_PROVIDER DEEPSEEK_API_KEY
+  DIAGNOSTIC_MODEL_PROVIDER DIAGNOSTIC_MODEL_NAME GEMINI_API_KEY
 do
   require_value "$key"
 done
@@ -65,15 +65,17 @@ esac
 [ "$(value_of SESSION_COOKIE_SECURE)" = "true" ] \
   || fail "SESSION_COOKIE_SECURE must be true for public HTTPS"
 
-[ "$(value_of DIAGNOSTIC_MODEL_PROVIDER)" = "deepseek" ] \
-  || fail "DIAGNOSTIC_MODEL_PROVIDER must be deepseek for the logged-in live public demo"
+[ "$(value_of DIAGNOSTIC_MODEL_PROVIDER)" = "gemini" ] \
+  || fail "DIAGNOSTIC_MODEL_PROVIDER must be gemini for the logged-in live public demo"
+[ "$(value_of DIAGNOSTIC_MODEL_NAME)" = "gemini-2.5-flash" ] \
+  || fail "DIAGNOSTIC_MODEL_NAME must match the pinned release baseline"
 
-api_key="$(value_of DEEPSEEK_API_KEY)"
+api_key="$(value_of GEMINI_API_KEY)"
 case "$api_key" in
   replace-*|test-*|ci-*|placeholder*)
-    fail "DEEPSEEK_API_KEY is still a placeholder"
+    fail "GEMINI_API_KEY is still a placeholder"
     ;;
 esac
-[ "${#api_key}" -ge 16 ] || fail "DEEPSEEK_API_KEY does not look configured"
+[ "${#api_key}" -ge 16 ] || fail "GEMINI_API_KEY does not look configured"
 
 echo "public deployment environment checks passed (secret values not printed)"

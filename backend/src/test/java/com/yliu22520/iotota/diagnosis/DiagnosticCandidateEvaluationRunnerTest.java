@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DiagnosticCandidateEvaluationRunnerTest {
 
     @Test
-    void evaluatesBothCandidatesWithTheSameFortyFiveRunSuite() {
+    void evaluatesEachPinnedCandidateWithTheSameFortyFiveRunSuite() {
         AtomicInteger calls = new AtomicInteger();
         List<String> modelIds = new ArrayList<>();
         DiagnosticEvaluationCaseRunner caseRunner = (testCase, runNumber, configuration) -> {
@@ -24,8 +24,8 @@ class DiagnosticCandidateEvaluationRunnerTest {
         List<DiagnosticEvaluationReport> reports = new DiagnosticCandidateEvaluationRunner().run(caseRunner);
 
         assertThat(reports).extracting(DiagnosticEvaluationReport::modelId)
-                .containsExactly("deepseek-v4-flash", "deepseek-v4-pro");
-        assertThat(calls).hasValue(90);
-        assertThat(modelIds).containsOnly("deepseek-v4-flash", "deepseek-v4-pro");
+                .containsExactly("gemini-2.5-flash");
+        assertThat(calls).hasValue(45);
+        assertThat(modelIds).containsOnly("gemini-2.5-flash");
     }
 }

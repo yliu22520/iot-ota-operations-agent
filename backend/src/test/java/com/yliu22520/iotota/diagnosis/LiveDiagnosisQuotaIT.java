@@ -67,8 +67,7 @@ class LiveDiagnosisQuotaIT {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("knowledge.embedding.provider", () -> "test");
-        registry.add("diagnosis.model.provider", () -> "deepseek");
-        registry.add("spring.ai.deepseek.api-key", () -> "test-key");
+        registry.add("diagnosis.model.provider", () -> " GEMINI ");
         registry.add("demo.data-reset.enabled", () -> "false");
         registry.add("demo.live-diagnosis.daily-limit", () -> "20");
         registry.add("demo.live-diagnosis.per-minute-limit", () -> "1");
@@ -77,7 +76,7 @@ class LiveDiagnosisQuotaIT {
     @BeforeEach
     void restoreKnownStateAndMakeTheExternalModelUnavailable() {
         resetService.resetNow();
-        doThrow(new DiagnosticModelUnavailableException("MISSING_DEEPSEEK_API_KEY"))
+        doThrow(new DiagnosticModelUnavailableException(DiagnosticModelUnavailableException.API_KEY_MISSING))
                 .when(modelClient).complete(any(DiagnosticModelRequest.class));
     }
 
@@ -115,15 +114,15 @@ class LiveDiagnosisQuotaIT {
         String diagnosticTaskId = JsonPath.read(created.getResponse().getContentAsString(), "$.diagnosticTaskId");
         String incomplete = waitForState(firstSession, diagnosticTaskId, "INCOMPLETE");
 
-        assertThat(incomplete).contains("EVIDENCE_INCOMPLETE", "MISSING_DEEPSEEK_API_KEY");
+        assertThat(incomplete).contains("EVIDENCE_INCOMPLETE", DiagnosticModelUnavailableException.API_KEY_MISSING);
         assertThat(incomplete).doesNotContain("controlled-diagnostic-explainer-v1", "reasoning_content");
         verify(modelClient, times(1)).complete(any(DiagnosticModelRequest.class));
 
         mockMvc.perform(get("/api/v1/diagnostic-tasks/{id}/telemetry", diagnosticTaskId)
                         .session(firstSession))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.modelConfiguration.provider").value("deepseek"))
-                .andExpect(jsonPath("$.modelConfiguration.modelId").value("deepseek-v4-flash"))
+                .andExpect(jsonPath("$.modelConfiguration.provider").value("gemini"))
+                .andExpect(jsonPath("$.modelConfiguration.modelId").value("gemini-2.5-flash"))
                 .andExpect(jsonPath("$.modelConfiguration.automaticFallbackEnabled").value(false))
                 .andExpect(jsonPath("$.tokenUsage.reported").value(false));
 

@@ -1,9 +1,11 @@
 spring:
   application:
     name: iot-ota-operations-agent
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration
+  ai:
+    # The provider adapter creates the real chat model only for an explicit Gemini run.
+    # Keeping Spring AI chat auto-configuration disabled preserves the controlled default.
+    model:
+      chat: none
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ota_operations}
     username: ${SPRING_DATASOURCE_USERNAME:ota}
@@ -24,7 +26,7 @@ spring:
 diagnosis:
   model:
     provider: ${DIAGNOSTIC_MODEL_PROVIDER:controlled}
-    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    name: ${DIAGNOSTIC_MODEL_NAME:gemini-2.5-flash}
   evaluation:
     enabled: ${DIAGNOSTIC_EVALUATION_ENABLED:false}
     output-directory: ${DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY:${java.io.tmpdir}/iot-ota-evaluation}

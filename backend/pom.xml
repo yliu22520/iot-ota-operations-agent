@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
+        <version>3.5.7</version>
         <relativePath/>
     </parent>
 
@@ -21,7 +21,7 @@
         <java.version>17</java.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <archunit.version>1.3.0</archunit.version>
-        <spring-ai.version>1.0.9</spring-ai.version>
+        <spring-ai.version>1.1.0</spring-ai.version>
         <skipITs>true</skipITs>
     </properties>
 
@@ -88,7 +88,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-deepseek</artifactId>
+            <artifactId>spring-ai-starter-model-google-genai</artifactId>
         </dependency>
 
         <dependency>

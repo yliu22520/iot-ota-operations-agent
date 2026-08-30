@@ -32,7 +32,7 @@ Caddy :80/:443
   |                                      |-- deterministic safety rules
   |                                      |-- local knowledge / pgvector
   |                                      |-- approval + retry + audit
-  |                                      `-- DeepSeek (server side only)
+  |                                      `-- Gemini (server side only)
   |
   `-- /* ----------------------------> Vue static frontend (Nginx :80)
 
@@ -113,20 +113,21 @@ CREATED
 - Caddy 终止 HTTPS，并把 `/api/*` 与前端放在同一域名。
 - Spring Boot 使用服务端 Session；公开环境必须设置 `SESSION_COOKIE_SECURE=true`。
 - Spring Boot 信任 Caddy 的转发协议头，使 HTTPS 后的 Session/CSRF 行为与原始请求协议一致。
-- 前端不接收数据库密码、DeepSeek Key、demo operator 密码或其他后端密钥。
-- `DEEPSEEK_API_KEY` 只由 backend 进程从环境变量读取；不写入 `application.yml`、前端 bundle 或评测报告。
+- 前端不接收数据库密码、Gemini API key、demo operator 密码或其他后端密钥。
+- `GEMINI_API_KEY` 只由 backend 进程从环境变量读取；不写入 `application.yml`、前端 bundle 或评测报告。
 - 匿名接口只有 `/api/v1/public/diagnostic-summaries` 等明确 permit 的只读表面；其余业务 API 需要登录。
 - 所有会改变状态的登录/诊断/审批流程都受 Spring Security CSRF 保护。
 - 公共摘要由 `PublicSummaryCatalog` 提供，是代码内维护的安全预生成内容；读取摘要不会触发模型或写数据库。
 - 演示数据始终标记为 simulated。
 
-## DeepSeek 模型配置与发布门槛
+## Gemini 模型配置与发布门槛
 
 运行时 release baseline 固定为：
 
-- Provider：`deepseek`
-- Model：`deepseek-v4-flash`
+- Provider：`gemini`
+- Model：`gemini-2.5-flash`
 - Reasoning tier：`HIGH`
+- Reasoning budget：`4096` tokens
 - Prompt：`diagnosis-agent-v1`
 - Tool schema：`diagnostic-tools-v1`
 - Temperature：`0.0`
@@ -134,7 +135,7 @@ CREATED
 - Automatic fallback：关闭
 - 输入边界：text-only
 
-`deepseek-v4-pro` 只作为发布前候选比较，不提供给浏览器作为运行时切换项。
+运行时只允许使用固定的 `gemini-2.5-flash` 基线；当前评测候选列表也只包含该基线，不提供给浏览器作为运行时切换项。
 
 真实模型评测使用固定 15-case suite，每个候选每个 case 跑 3 次。Release gate 要求：
 
@@ -144,7 +145,7 @@ CREATED
 
 评测报告只保存结构化结果、失败类别、配置 ID、Token/时延/预算等安全遥测，不保存 API Key、原始 Prompt、provider 原文或内部推理。
 
-详见 `docs/REAL-MODEL-EVALUATION.md`。**没有真实 `DEEPSEEK_API_KEY` 时不能宣称真实模型评测通过。**
+详见 `docs/REAL-MODEL-EVALUATION.md`。**没有真实 `GEMINI_API_KEY` 时不能宣称真实模型评测通过。**
 
 ## Flyway、seed、模拟数据与 reset
 
@@ -221,13 +222,13 @@ chmod 600 infra/.env
 - `CADDY_ACME_EMAIL`
 - `POSTGRES_PASSWORD`
 - `DEMO_OPERATOR_PASSWORD`
-- `DEEPSEEK_API_KEY`
+- `GEMINI_API_KEY`
 
 公开登录实时 Demo 应保持：
 
 ```text
 SESSION_COOKIE_SECURE=true
-DIAGNOSTIC_MODEL_PROVIDER=deepseek
+DIAGNOSTIC_MODEL_PROVIDER=gemini
 ```
 
 `.env` 已被 `.gitignore` 忽略。不要把真实值提交到 Git、Issue、PR、截图或录屏。
@@ -238,7 +239,7 @@ DIAGNOSTIC_MODEL_PROVIDER=deepseek
 sh infra/validate-public-env.sh infra/.env
 ```
 
-脚本只检查并报告配置是否满足公开部署要求，不打印 Secret。placeholder、本地密码、非 HTTPS Cookie 配置、非 DeepSeek live provider 或明显未配置的 Key 都会阻断。
+脚本只检查并报告配置是否满足公开部署要求，不打印 Secret。placeholder、本地密码、非 HTTPS Cookie 配置、非 Gemini live provider 或明显未配置的 Key 都会阻断。
 
 ### 3. 启动
 
@@ -286,9 +287,9 @@ curl -o /dev/null -s -w '%{http_code}\n' \
 3. 打开 `CALLBACK_TIMEOUT`，发起诊断，确认生成可审批 Retry Plan。
 4. 审批计划，确认只执行一次受控重试。
 5. 查看验证结果与审计事件。
-6. 检查 DevTools：请求都发往同域 `/api/*`；浏览器资源中不应出现 DeepSeek Key、数据库密码或 operator 密码。
+6. 检查 DevTools：请求都发往同域 `/api/*`；浏览器资源中不应出现 Gemini API key、数据库密码或 operator 密码。
 
-最终公网 DNS、证书、真实账号配置、真实 DeepSeek 调用、完整服务器系统测试必须在实际服务器上验收。
+最终公网 DNS、证书、真实账号配置、真实 Gemini 调用、完整服务器系统测试必须在实际服务器上验收。
 
 ## 确定性测试
 
@@ -320,16 +321,18 @@ PR CI 还会校验 Compose/Caddy 配置，并扫描构建后的前端 bundle，�
 
 1. 重新跑 deterministic backend/frontend tests。
 2. 校验 Docker Compose 与 Caddy 配置。
-3. 要求仓库 Actions Secret 中存在真实 `DEEPSEEK_API_KEY`。
-4. 运行两个固定 DeepSeek 候选的真实 release gate。
+3. 要求仓库 Actions Secret 中存在真实 `GEMINI_API_KEY`。
+4. 运行固定 Gemini 基线的真实 release gate。
 5. 上传安全评测报告。
-6. 固定 runtime baseline（当前 `deepseek-v4-flash`）未通过 release gate，或其安全 case / safety blocker 失败，workflow 失败。另一个候选仍会产出同规格比较报告，但不会单独阻断已经选定的 runtime baseline。
+6. 固定 runtime baseline（当前 `gemini-2.5-flash`）未通过 release gate，或其安全 case / safety blocker 失败，workflow 失败。
 
 本地也可显式运行真实 gate：
 
 ```bash
 export RUN_REAL_MODEL_EVALUATION=true
-export DEEPSEEK_API_KEY='set-in-shell-only'
+export GEMINI_API_KEY='set-in-shell-only'
+export DIAGNOSTIC_MODEL_PROVIDER=gemini
+export DIAGNOSTIC_MODEL_NAME=gemini-2.5-flash
 export DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY='backend/target/real-model-evaluation'
 
 mvn -f backend/pom.xml -Dtest=RealModelReleaseGateTest test
@@ -366,7 +369,7 @@ backend 默认 JVM heap 为 `-Xms256m -Xmx1280m`，给 JVM native memory、ONNX/
 - 真实域名与 DNS
 - 公网 HTTPS / 最终 public URL
 - 真实 demo operator 服务器配置
-- 真实 `DEEPSEEK_API_KEY` 下的最终 evaluation
+- 真实 `GEMINI_API_KEY` 下的最终 evaluation
 - 2C/4GB/40GB 云主机资源实测
 - 完整服务器系统测试
 - 真实运行 24 小时的数据 reset 验证
@@ -375,7 +378,6 @@ backend 默认 JVM heap 为 `-Xms256m -Xmx1280m`，给 JVM native memory、ONNX/
 ## 相关设计文档
 
 - `docs/AGENT-CONTRACT.md`
-- `docs/EVALUATION.md`
 - `docs/REAL-MODEL-EVALUATION.md`
 - `docs/DEMO-OPERATIONS.md`
 - `docs/V1-SCOPE.md`

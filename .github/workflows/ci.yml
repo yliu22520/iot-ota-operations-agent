@@ -49,7 +49,7 @@ jobs:
       - run: npm --prefix frontend run build
       - name: Ensure backend secret names are absent from browser bundle
         run: |
-          if grep -R -E 'DEEPSEEK_API_KEY|POSTGRES_PASSWORD|DEMO_OPERATOR_PASSWORD' frontend/dist; then
+          if grep -R -E 'GEMINI_API_KEY|POSTGRES_PASSWORD|DEMO_OPERATOR_PASSWORD' frontend/dist; then
             echo 'Backend-only secret name found in frontend/dist.' >&2
             exit 1
           fi

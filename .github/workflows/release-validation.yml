@@ -35,7 +35,7 @@ jobs:
 
       - name: Ensure backend secret names are absent from browser bundle
         run: |
-          if grep -R -E 'DEEPSEEK_API_KEY|POSTGRES_PASSWORD|DEMO_OPERATOR_PASSWORD' frontend/dist; then
+          if grep -R -E 'GEMINI_API_KEY|POSTGRES_PASSWORD|DEMO_OPERATOR_PASSWORD' frontend/dist; then
             echo 'Backend-only secret name found in frontend/dist.' >&2
             exit 1
           fi
@@ -65,7 +65,9 @@ jobs:
     timeout-minutes: 120
     env:
       RUN_REAL_MODEL_EVALUATION: 'true'
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      DIAGNOSTIC_MODEL_PROVIDER: gemini
+      DIAGNOSTIC_MODEL_NAME: gemini-2.5-flash
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY: ${{ github.workspace }}/backend/target/real-model-evaluation
     steps:
       - uses: actions/checkout@v4
@@ -76,15 +78,15 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Require a real DeepSeek credential
+      - name: Require a real Gemini credential
         shell: bash
         run: |
-          if [ -z "${DEEPSEEK_API_KEY}" ]; then
-            echo 'Release validation blocked: DEEPSEEK_API_KEY Actions Secret is not configured.' >&2
+          if [ -z "${GEMINI_API_KEY}" ]; then
+            echo 'Release validation blocked: GEMINI_API_KEY Actions Secret is not configured.' >&2
             exit 1
           fi
 
-      - name: Run real DeepSeek release gate
+      - name: Run real Gemini release gate
         run: mvn -f backend/pom.xml -Dtest=RealModelReleaseGateTest test
 
       - name: Upload safe evaluation reports

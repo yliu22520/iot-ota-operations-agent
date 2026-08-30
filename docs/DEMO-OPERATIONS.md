@@ -1,6 +1,6 @@
 # Demo operations boundaries
 
-The live DeepSeek quota is a global, in-memory quota for one backend process. The demo compose setup is intended to run one backend instance. A multi-instance deployment must replace this limiter with a shared store before it is enabled.
+The live Gemini quota is a global, in-memory quota for one backend process. The demo compose setup is intended to run one backend instance. A multi-instance deployment must replace this limiter with a shared store before it is enabled.
 
 The scheduled demo reset truncates only the simulated operations, diagnosis, retry, and audit tables, then reseeds the known two-task dataset in one PostgreSQL transaction. Operator credentials and the curated knowledge index are intentionally preserved.
 

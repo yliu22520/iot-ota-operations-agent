@@ -185,8 +185,9 @@ public class DiagnosticWorkflow {
 
     private StructuredToolResult<Object> modelFailure(UUID diagnosticTaskId,
                                                       DiagnosticModelUnavailableException exception) {
-        String errorCode = "MISSING_DEEPSEEK_API_KEY".equals(exception.getMessage())
-                ? "MISSING_DEEPSEEK_API_KEY" : "REAL_MODEL_CALL_FAILED";
+        String errorCode = DiagnosticModelUnavailableException.API_KEY_MISSING.equals(exception.getMessage())
+                ? DiagnosticModelUnavailableException.API_KEY_MISSING
+                : DiagnosticModelUnavailableException.CALL_FAILED;
         return StructuredToolResult.failure("diagnosticModel", "model:" + diagnosticTaskId,
                 "diagnosis.model", Instant.now(clock), errorCode);
     }

@@ -9,7 +9,7 @@ import java.time.ZoneOffset;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class DeepSeekEvaluationCaseRunnerTest {
+class RealModelEvaluationCaseRunnerTest {
 
     @Test
     void evaluatesStructuredModelOutputAgainstTheCaseContract() {
@@ -26,7 +26,7 @@ class DeepSeekEvaluationCaseRunnerTest {
                 """, 180, 48);
         DiagnosticEvaluationCase testCase = DiagnosticEvaluationCaseCatalog.all().get(0);
 
-        DiagnosticEvaluationObservation observation = new DeepSeekEvaluationCaseRunner(client,
+        DiagnosticEvaluationObservation observation = new RealModelEvaluationCaseRunner(client,
                 Clock.fixed(Instant.parse("2026-08-12T00:00:00Z"), ZoneOffset.UTC))
                 .run(testCase, 1, DiagnosticModelConfiguration.releaseBaseline());
 
@@ -53,7 +53,7 @@ class DeepSeekEvaluationCaseRunnerTest {
                 """, 180, 48);
         DiagnosticEvaluationCase testCase = DiagnosticEvaluationCaseCatalog.all().get(1);
 
-        DiagnosticEvaluationObservation observation = new DeepSeekEvaluationCaseRunner(client,
+        DiagnosticEvaluationObservation observation = new RealModelEvaluationCaseRunner(client,
                 Clock.systemUTC()).run(testCase, 1, DiagnosticModelConfiguration.releaseBaseline());
 
         assertThat(observation.passed()).isFalse();
@@ -76,7 +76,7 @@ class DeepSeekEvaluationCaseRunnerTest {
                 }
                 """, 180, 4_097);
 
-        assertThatThrownBy(() -> new DeepSeekEvaluationCaseRunner(client,
+        assertThatThrownBy(() -> new RealModelEvaluationCaseRunner(client,
                 Clock.systemUTC()).run(DiagnosticEvaluationCaseCatalog.all().get(0), 1,
                 DiagnosticModelConfiguration.releaseBaseline()))
                 .isInstanceOf(DiagnosticBudgetExceededException.class);
@@ -95,7 +95,7 @@ class DeepSeekEvaluationCaseRunnerTest {
                 }
                 """, 180, 48);
 
-        DiagnosticEvaluationObservation observation = new DeepSeekEvaluationCaseRunner(client,
+        DiagnosticEvaluationObservation observation = new RealModelEvaluationCaseRunner(client,
                 Clock.systemUTC()).run(DiagnosticEvaluationCaseCatalog.all().get(0), 1,
                 DiagnosticModelConfiguration.releaseBaseline());
 

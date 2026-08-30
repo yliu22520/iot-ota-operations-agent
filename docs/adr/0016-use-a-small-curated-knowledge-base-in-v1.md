@@ -1,6 +1,6 @@
 # 第一版使用小型自建运维知识库
 
-第一版固定使用 8 篇自建资料，覆盖 OTA 状态、版本兼容、回调超时、下载与校验、设备离线与资源不足、重试安全策略和 2 篇历史故障案例，作为辅助知识参与诊断解释；知识库不阻塞结构化工具链，也不能覆盖权威规则或直接决定重试资格。向量由 Spring AI 本地 ONNX `intfloat/multilingual-e5-small` 生成，使用 384 维 pgvector 余弦检索，不依赖 DeepSeek Embedding、第二个云端密钥、GPU 或 Ollama。选择小型、可控的资料集，是为了验证检索与证据引用的价值，同时避免 Elasticsearch 等重型基础设施成为项目主体。
+第一版固定使用 8 篇自建资料，覆盖 OTA 状态、版本兼容、回调超时、下载与校验、设备离线与资源不足、重试安全策略和 2 篇历史故障案例，作为辅助知识参与诊断解释；知识库不阻塞结构化工具链，也不能覆盖权威规则或直接决定重试资格。向量由 Spring AI 本地 ONNX `intfloat/multilingual-e5-small` 生成，使用 384 维 pgvector 余弦检索，不依赖 provider-neutral ONNX embedding、第二个云端密钥、GPU 或 Ollama。选择小型、可控的资料集，是为了验证检索与证据引用的价值，同时避免 Elasticsearch 等重型基础设施成为项目主体。
 
 ## Considered Options
 

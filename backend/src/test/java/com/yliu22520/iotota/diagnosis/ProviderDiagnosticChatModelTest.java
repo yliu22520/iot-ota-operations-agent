@@ -8,12 +8,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class DeepSeekDiagnosticChatModelTest {
+class ProviderDiagnosticChatModelTest {
 
     @Test
     void rendersOnlyStructuredFactsAndKeepsModelTelemetrySeparateFromTheReportText() {
         CapturingClient client = new CapturingClient();
-        DeepSeekDiagnosticChatModel model = new DeepSeekDiagnosticChatModel(
+        ProviderDiagnosticChatModel model = new ProviderDiagnosticChatModel(
                 client, DiagnosticModelConfiguration.releaseBaseline());
 
         DiagnosticExplanation explanation = model.explain(new DiagnosticExplanationRequest(
@@ -25,16 +25,16 @@ class DeepSeekDiagnosticChatModelTest {
         assertThat(explanation.text()).isEqualTo("The backend rule is authoritative.");
         assertThat(explanation.inputTokens()).isEqualTo(120);
         assertThat(explanation.outputTokens()).isEqualTo(8);
-        assertThat(model.modelId()).isEqualTo("deepseek-v4-flash");
+        assertThat(model.modelId()).isEqualTo("gemini-2.5-flash");
         assertThat(client.request.prompt()).contains("MODEL_NOT_SUPPORTED", "compatibility:101", "HIGH");
         assertThat(client.request.prompt()).doesNotContain("reasoning_content");
     }
 
     @Test
     void propagatesRealModelFailureInsteadOfUsingTheControlledSubstitute() {
-        DeepSeekDiagnosticChatModel model = new DeepSeekDiagnosticChatModel(
+        ProviderDiagnosticChatModel model = new ProviderDiagnosticChatModel(
                 request -> {
-                    throw new DiagnosticModelUnavailableException("MISSING_DEEPSEEK_API_KEY");
+                    throw new DiagnosticModelUnavailableException(DiagnosticModelUnavailableException.API_KEY_MISSING);
                 }, DiagnosticModelConfiguration.releaseBaseline());
 
         assertThatThrownBy(() -> model.explain(new DiagnosticExplanationRequest(
@@ -42,7 +42,7 @@ class DeepSeekDiagnosticChatModelTest {
                 new VersionCompatibilityDecision(false, "MODEL_NOT_SUPPORTED", "model is not supported"),
                 List.of())))
                 .isInstanceOf(DiagnosticModelUnavailableException.class)
-                .hasMessage("MISSING_DEEPSEEK_API_KEY");
+                .hasMessage(DiagnosticModelUnavailableException.API_KEY_MISSING);
     }
 
     private static final class CapturingClient implements DiagnosticModelClient {

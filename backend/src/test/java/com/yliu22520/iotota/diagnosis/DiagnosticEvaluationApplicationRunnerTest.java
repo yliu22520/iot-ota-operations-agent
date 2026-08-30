@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DiagnosticEvaluationApplicationRunnerTest {
 
     @Test
-    void explicitRunnerWritesOnePairOfArtifactsPerCandidate(@TempDir Path outputDirectory) throws Exception {
+    void explicitRunnerWritesOnePairOfArtifactsPerPinnedCandidate(@TempDir Path outputDirectory) throws Exception {
         AtomicInteger calls = new AtomicInteger();
         DiagnosticModelClient client = request -> {
             calls.incrementAndGet();
@@ -37,14 +37,12 @@ class DiagnosticEvaluationApplicationRunnerTest {
 
         runner.run(new DefaultApplicationArguments());
 
-        assertThat(calls).hasValue(90);
+        assertThat(calls).hasValue(45);
         try (Stream<Path> files = Files.list(outputDirectory)) {
             assertThat(files.map(path -> path.getFileName().toString()).toList())
                     .containsExactlyInAnyOrder(
-                            "deepseek_deepseek-v4-flash_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_temperature_0.0_topP_1.0.json",
-                            "deepseek_deepseek-v4-flash_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_temperature_0.0_topP_1.0.md",
-                            "deepseek_deepseek-v4-pro_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_temperature_0.0_topP_1.0.json",
-                            "deepseek_deepseek-v4-pro_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_temperature_0.0_topP_1.0.md");
+                             "gemini_gemini-2.5-flash_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_reasoningBudgetTokens_4096_temperature_0.0_topP_1.0.json",
+                             "gemini_gemini-2.5-flash_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_reasoningBudgetTokens_4096_temperature_0.0_topP_1.0.md");
         }
     }
 }

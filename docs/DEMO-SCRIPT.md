@@ -64,7 +64,7 @@
 
 ## 画面中不要出现
 
-- `DEEPSEEK_API_KEY`
+- `GEMINI_API_KEY`
 - PostgreSQL 密码
 - demo operator 密码
 - Session Cookie / CSRF Token

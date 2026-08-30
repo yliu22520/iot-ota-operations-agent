@@ -37,7 +37,7 @@ public final class DiagnosticEvaluationApplicationRunner implements ApplicationR
     }
 
     List<DiagnosticEvaluationReport> evaluate() {
-        DiagnosticEvaluationCaseRunner caseRunner = new DeepSeekEvaluationCaseRunner(client, clock, objectMapper);
+        DiagnosticEvaluationCaseRunner caseRunner = new RealModelEvaluationCaseRunner(client, clock, objectMapper);
         return new DiagnosticCandidateEvaluationRunner().run(caseRunner);
     }
 }
