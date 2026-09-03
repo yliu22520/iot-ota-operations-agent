@@ -23,15 +23,17 @@ class DiagnosticEvaluationRunnerTest {
 
         assertThat(calls).hasValue(45);
         assertThat(report.observations()).hasSize(45);
-        assertThat(report.modelId()).isEqualTo("deepseek-v4-flash");
+        assertThat(report.provider()).isEqualTo("gemini");
+        assertThat(report.modelId()).isEqualTo("gemini-3.1-flash-lite");
         assertThat(report.reasoningTier()).isEqualTo("HIGH");
+        assertThat(report.reasoningBudgetTokens()).isEqualTo(4_096);
         assertThat(report.releaseDecision().releaseAllowed()).isTrue();
     }
 
     @Test
     void turnsMissingKeyOrRealCallErrorsIntoAnExplicitIncompleteObservation() {
         DiagnosticEvaluationCaseRunner caseRunner = (testCase, runNumber, configuration) -> {
-            throw new DiagnosticModelUnavailableException("MISSING_DEEPSEEK_API_KEY");
+            throw new DiagnosticModelUnavailableException(DiagnosticModelUnavailableException.API_KEY_MISSING);
         };
 
         DiagnosticEvaluationReport report = new DiagnosticEvaluationRunner(caseRunner)

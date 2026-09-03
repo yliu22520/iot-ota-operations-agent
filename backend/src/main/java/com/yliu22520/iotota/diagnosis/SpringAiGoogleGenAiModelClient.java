@@ -3,48 +3,77 @@ package com.yliu22520.iotota.diagnosis;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.deepseek.DeepSeekChatOptions;
+import org.springframework.beans.factory.DisposableBean;
 
 import java.util.Objects;
 
-/** Spring AI text-only transport adapter; provider metadata is reduced to non-sensitive token telemetry. */
-public final class SpringAiDeepSeekModelClient implements DiagnosticModelClient {
+/** Spring AI Google GenAI transport adapter; provider details stop at this boundary. */
+public final class SpringAiGoogleGenAiModelClient implements DiagnosticModelClient, DisposableBean {
 
     private final ChatModel chatModel;
+    private final AutoCloseable resource;
 
-    public SpringAiDeepSeekModelClient(ChatModel chatModel) {
+    public SpringAiGoogleGenAiModelClient(ChatModel chatModel) {
+        this(chatModel, null);
+    }
+
+    SpringAiGoogleGenAiModelClient(ChatModel chatModel, AutoCloseable resource) {
         this.chatModel = Objects.requireNonNull(chatModel, "chatModel");
+        this.resource = resource;
     }
 
     @Override
     public DiagnosticModelResponse complete(DiagnosticModelRequest request) {
         try {
             DiagnosticModelConfiguration configuration = request.configuration();
-            DeepSeekChatOptions options = DeepSeekChatOptions.builder()
-                    .model(configuration.modelId())
-                    .temperature(configuration.temperature())
-                    .topP(configuration.topP())
-                    .maxTokens(configuration.limits().maxOutputTokens())
-                    .build();
+            var options = GoogleGenAiDiagnosticModelOptions.from(configuration);
             ChatResponse response = chatModel.call(new Prompt(request.prompt(), options));
             if (response == null || response.getResult() == null || response.getResult().getOutput() == null
                     || response.getResult().getOutput().getText() == null
                     || response.getResult().getOutput().getText().isBlank()) {
-                throw new DiagnosticModelUnavailableException("REAL_MODEL_CALL_FAILED: empty model response");
+                throw new DiagnosticModelUnavailableException(
+                        DiagnosticModelUnavailableException.CALL_FAILED + ": empty model response");
             }
             int inputTokens = response.getMetadata() != null && response.getMetadata().getUsage() != null
                     && response.getMetadata().getUsage().getPromptTokens() != null
+                    && response.getMetadata().getUsage().getPromptTokens() > 0
                     ? response.getMetadata().getUsage().getPromptTokens()
                     : estimateTokens(request.prompt());
             int outputTokens = response.getMetadata() != null && response.getMetadata().getUsage() != null
                     && response.getMetadata().getUsage().getCompletionTokens() != null
+                    && response.getMetadata().getUsage().getCompletionTokens() > 0
                     ? response.getMetadata().getUsage().getCompletionTokens()
                     : estimateTokens(response.getResult().getOutput().getText());
             return new DiagnosticModelResponse(response.getResult().getOutput().getText(), inputTokens, outputTokens);
         } catch (DiagnosticModelUnavailableException exception) {
             throw exception;
         } catch (RuntimeException exception) {
-            throw new DiagnosticModelUnavailableException("REAL_MODEL_CALL_FAILED: DeepSeek request failed", exception);
+            throw new DiagnosticModelUnavailableException(
+                    DiagnosticModelUnavailableException.CALL_FAILED + ": Google GenAI request failed", exception);
+        }
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        Exception closeFailure = null;
+        try {
+            if (chatModel instanceof DisposableBean disposableBean) {
+                disposableBean.destroy();
+            }
+        } catch (Exception exception) {
+            closeFailure = exception;
+        }
+        try {
+            if (resource != null) {
+                resource.close();
+            }
+        } catch (Exception exception) {
+            if (closeFailure == null) {
+                closeFailure = exception;
+            }
+        }
+        if (closeFailure != null) {
+            throw closeFailure;
         }
     }
 

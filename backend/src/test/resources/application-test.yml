@@ -1,6 +1,6 @@
-# The real model key is supplied only when an explicit DeepSeek evaluation is run.
-# This placeholder keeps the Spring AI auto-configuration deterministic in CI.
+# The real model key is supplied only when an explicit Gemini evaluation is run.
+# The selected chat model is created by the provider adapter only when that evaluation is enabled.
 spring:
   ai:
-    deepseek:
-      api-key: test-key
+    model:
+      chat: none

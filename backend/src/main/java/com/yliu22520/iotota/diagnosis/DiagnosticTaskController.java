@@ -2,6 +2,7 @@ package com.yliu22520.iotota.diagnosis;
 
 import com.yliu22520.iotota.simulator.UpgradeTaskNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,18 @@ public class DiagnosticTaskController {
         return service.findActiveForUpgradeTask(upgradeTaskId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @ExceptionHandler(LiveDiagnosticRateLimitException.class)
+    ResponseEntity<ProblemDetail> handleLiveDiagnosticRateLimit(LiveDiagnosticRateLimitException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, exception.getMessage());
+        problem.setProperty("code", "LIVE_DIAGNOSIS_RATE_LIMITED");
+        problem.setProperty("remainingDaily", exception.remainingDaily());
+        long retryAfterSeconds = Math.max(1L, exception.retryAfter().toSeconds());
+        problem.setProperty("retryAfterSeconds", retryAfterSeconds);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(retryAfterSeconds))
+                .body(problem);
     }
 
     @ExceptionHandler(DiagnosticAlreadyActiveException.class)

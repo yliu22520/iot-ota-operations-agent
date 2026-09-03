@@ -28,8 +28,10 @@ public final class DiagnosticEvaluationRunner {
                 observations.add(runCase(testCase, runNumber, configuration));
             }
         }
-        return new DiagnosticEvaluationReport(configuration.configurationId(), configuration.modelId(),
-                configuration.reasoningTier(), configuration.promptVersion(), configuration.toolSchemaVersion(),
+        return new DiagnosticEvaluationReport(configuration.provider(), configuration.configurationId(),
+                configuration.modelId(),
+                configuration.reasoningTier(), configuration.reasoningBudgetTokens(), configuration.promptVersion(),
+                configuration.toolSchemaVersion(),
                 configuration.limits(), configuration.automaticFallbackEnabled(), DiagnosticEvaluationCaseCatalog.all(),
                 observations, releaseGate.evaluate(observations));
     }
@@ -43,7 +45,7 @@ public final class DiagnosticEvaluationRunner {
             return failure(testCase, runNumber, "BUDGET_EXCEEDED");
         } catch (DiagnosticModelUnavailableException exception) {
             String failureClass = exception.getMessage() != null
-                    && exception.getMessage().startsWith("MISSING_DEEPSEEK_API_KEY")
+                    && exception.getMessage().startsWith(DiagnosticModelUnavailableException.API_KEY_MISSING)
                     ? "REAL_MODEL_UNAVAILABLE"
                     : "REAL_MODEL_CALL_FAILED";
             return failure(testCase, runNumber, failureClass);

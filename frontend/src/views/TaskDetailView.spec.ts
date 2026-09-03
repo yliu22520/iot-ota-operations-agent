@@ -35,7 +35,7 @@ describe('TaskDetailView diagnosis seam', () => {
       diagnosticTaskId: 'diagnostic-101',
       modelConfiguration: {
         provider: 'controlled', modelId: 'controlled-diagnostic-explainer-v1', reasoningTier: 'CONTROLLED',
-        promptVersion: 'diagnosis-agent-v1', toolSchemaVersion: 'diagnostic-tools-v1', temperature: 0, topP: 1,
+        promptVersion: 'diagnosis-agent-v2', toolSchemaVersion: 'diagnostic-tools-v1', temperature: 0, topP: 1,
         reportSchemaVersion: '1', embeddingModelId: 'test-embedding', embeddingModelRevision: 'test-revision',
         embeddingModelSha256: 'test-sha256', automaticFallbackEnabled: false,
       },

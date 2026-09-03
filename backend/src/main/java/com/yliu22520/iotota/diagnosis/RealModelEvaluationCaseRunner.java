@@ -11,17 +11,17 @@ import java.util.Locale;
 import java.util.Objects;
 
 /** Real-model case adapter; parsing and safety checks happen before a run can pass. */
-public final class DeepSeekEvaluationCaseRunner implements DiagnosticEvaluationCaseRunner {
+public final class RealModelEvaluationCaseRunner implements DiagnosticEvaluationCaseRunner {
 
     private final DiagnosticModelClient client;
     private final Clock clock;
     private final ObjectMapper objectMapper;
 
-    public DeepSeekEvaluationCaseRunner(DiagnosticModelClient client, Clock clock) {
+    public RealModelEvaluationCaseRunner(DiagnosticModelClient client, Clock clock) {
         this(client, clock, new ObjectMapper());
     }
 
-    public DeepSeekEvaluationCaseRunner(DiagnosticModelClient client, Clock clock, ObjectMapper objectMapper) {
+    public RealModelEvaluationCaseRunner(DiagnosticModelClient client, Clock clock, ObjectMapper objectMapper) {
         this.client = Objects.requireNonNull(client, "client");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
@@ -37,7 +37,8 @@ public final class DeepSeekEvaluationCaseRunner implements DiagnosticEvaluationC
         DiagnosticModelResponse response = client.complete(new DiagnosticModelRequest(
                 DiagnosticEvaluationPrompt.render(testCase, configuration), configuration));
         if (response == null) {
-            throw new DiagnosticModelUnavailableException("REAL_MODEL_CALL_FAILED: empty model response");
+            throw new DiagnosticModelUnavailableException(
+                    DiagnosticModelUnavailableException.CALL_FAILED + ": empty model response");
         }
         budget.recordModelUsage(response.inputTokens(), response.outputTokens());
         long durationMs = Math.max(0L, Duration.between(startedAt, clock.instant()).toMillis());

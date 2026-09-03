@@ -1,11 +1,11 @@
 package com.yliu22520.iotota.diagnosis;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 /** Deterministic, network-free substitute used by CI and the local simulated platform. */
 @Component
-@ConditionalOnProperty(name = "diagnosis.model.provider", havingValue = "controlled", matchIfMissing = true)
+@ConditionalOnExpression("'${diagnosis.model.provider:controlled}'.trim().equalsIgnoreCase('controlled')")
 public class ControlledDiagnosticChatModel implements DiagnosticChatModel {
 
     @Override

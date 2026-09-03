@@ -10,7 +10,7 @@ public class PublicSummaryCatalog {
 
     private final List<WorkbenchDtos.PublicSummary> summaries = List.of(
             new WorkbenchDtos.PublicSummary(
-                    "version-incompatible",
+                    "VERSION_INCOMPATIBLE",
                     "版本不兼容：禁止重试",
                     "目标固件与设备型号不匹配",
                     "后端兼容性规则确认目标固件不支持当前设备型号，因此系统明确禁止重试。",
@@ -19,7 +19,7 @@ public class PublicSummaryCatalog {
                     "只读诊断；不创建审批计划，不执行设备写操作。",
                     true),
             new WorkbenchDtos.PublicSummary(
-                    "callback-timeout",
+                    "CALLBACK_TIMEOUT",
                     "回调超时：审批后受控重试",
                     "升级命令已发送但设备回调超时",
                     "任务、设备、版本和消息事实满足重试规则，系统生成绑定事实快照的审批计划。",

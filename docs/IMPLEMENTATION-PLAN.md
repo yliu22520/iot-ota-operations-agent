@@ -1,6 +1,6 @@
 # V1 实施顺序
 
-本计划把已确认的设计决策转换为可执行的垂直切片。每个阶段完成后单独提交代码、测试、数据库迁移和必要文档，并通过确定性 CI；CI 不调用真实 DeepSeek API。
+本计划把已确认的设计决策转换为可执行的垂直切片。每个阶段完成后单独提交代码、测试、数据库迁移和必要文档，并通过确定性 CI；CI 不调用真实 Gemini Developer API。
 
 ## 仓库边界
 
@@ -21,7 +21,7 @@
 4. **回调超时完整闭环**：完成计划、15分钟批准、幂等执行、验证、审计和并发冲突处理。
 5. **知识检索**：加入8篇 Markdown 知识、Front Matter、ONNX Embedding、内容哈希索引、元数据过滤和 Top‑4 检索。
 6. **Vue 运维工作台**：完成案例入口、诊断详情、报告与批准、审计时间线，以及轮询、错误码和分级展示。
-7. **真实模型评测**：接入 `DEEPSEEK_API_KEY`，比较 `deepseek-v4-flash` 与 `deepseek-v4-pro`，按 [评测计划](./EVALUATION.md) 执行回归。
+7. **真实模型评测**：接入 `GEMINI_API_KEY`，对固定的 `gemini-3.1-flash-lite` 基线按 [真实模型评测说明](./REAL-MODEL-EVALUATION.md) 执行回归。
 8. **交付与演示**：完成 Docker Compose、Caddy HTTPS、公开只读演示、认证交互演示、README 和一分钟视频；两个本地切片完成后再选择通用云 VM。
 
 ## 暂不提前决定

@@ -15,7 +15,25 @@ jobs:
           java-version: '17'
           cache: maven
       - run: mvn -f backend/pom.xml test
-      - run: mvn -f backend/pom.xml -Pintegration verify
+      - name: Run backend integration tests
+        run: mvn -f backend/pom.xml -Pintegration verify
+      - name: Print integration test reports on failure
+        if: failure()
+        run: |
+          echo '=== Failsafe reports ==='
+          if [ -d backend/target/failsafe-reports ]; then
+            find backend/target/failsafe-reports -maxdepth 1 -type f -name '*.txt' -print -exec cat {} \;
+          else
+            echo 'No backend/target/failsafe-reports directory was created.'
+          fi
+      - name: Upload integration test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-failsafe-reports
+          path: backend/target/failsafe-reports/
+          if-no-files-found: warn
+          retention-days: 3
 
   frontend:
     runs-on: ubuntu-latest
@@ -25,7 +43,35 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: frontend/package.json
-      - run: npm install --prefix frontend --no-audit --no-fund
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend --no-audit --no-fund
       - run: npm --prefix frontend test -- --run
       - run: npm --prefix frontend run build
+      - name: Ensure backend secret names are absent from browser bundle
+        run: |
+          if grep -R -E 'GEMINI_API_KEY|POSTGRES_PASSWORD|DEMO_OPERATOR_PASSWORD' frontend/dist; then
+            echo 'Backend-only secret name found in frontend/dist.' >&2
+            exit 1
+          fi
+
+  delivery-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose syntax
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml config >/dev/null
+      - name: Validate Caddy configuration
+        run: |
+          docker run --rm \
+            -e PUBLIC_DOMAIN=demo.example.test \
+            -e CADDY_ACME_EMAIL=ops@example.test \
+            -v "$PWD/infra/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.8.4-alpine \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+      - name: Ensure example environment is blocked from public deployment
+        run: |
+          if sh infra/validate-public-env.sh infra/.env.example; then
+            echo '.env.example must not pass public deployment validation.' >&2
+            exit 1
+          fi
+          echo '.env.example was correctly rejected because it contains placeholders.'

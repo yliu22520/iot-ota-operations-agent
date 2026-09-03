@@ -20,8 +20,8 @@ class DiagnosticEvaluationReportWriterTest {
                 testCase.id(), testCase.type(), 1, true, List.of(), null, 5, 1, 100, 20, 100,
                 "rootCauseCode=VERSION_INCOMPATIBLE;retryEligible=false;approvalRequired=false");
         DiagnosticEvaluationReport report = new DiagnosticEvaluationReport(
-                "deepseek:deepseek-v4-flash:HIGH:diagnosis-agent-v1:diagnostic-tools-v1:temperature=0.0:topP=1.0",
-                "deepseek-v4-flash", "HIGH", "diagnosis-agent-v1", "diagnostic-tools-v1",
+                "gemini:gemini-3.1-flash-lite:HIGH:diagnosis-agent-v2:diagnostic-tools-v1:temperature=0.0:topP=1.0",
+                "gemini-3.1-flash-lite", "HIGH", "diagnosis-agent-v2", "diagnostic-tools-v1",
                 List.of(observation), new DiagnosticReleaseDecision(true, 3, 3, 5, 5, List.of(), List.of()));
 
         DiagnosticEvaluationReportFiles files = new DiagnosticEvaluationReportWriter(new ObjectMapper())
@@ -29,10 +29,13 @@ class DiagnosticEvaluationReportWriterTest {
 
         assertThat(files.json()).exists();
         assertThat(files.markdown()).exists();
-        assertThat(Files.readString(files.json())).contains("deepseek-v4-flash", "VERSION_INCOMPATIBLE",
+        assertThat(Files.readString(files.json())).contains("\"provider\"", "\"promptId\"", "\"toolSchemaId\"",
+                "gemini", "gemini-3.1-flash-lite", "VERSION_INCOMPATIBLE",
                 "retryAllowed", "requiredAssertions", "automaticFallbackEnabled", "maxToolCalls")
                 .doesNotContain("reasoning_content", "raw prompt");
-        assertThat(Files.readString(files.markdown())).contains("Expected root cause", "Expected retry",
+        assertThat(Files.readString(files.markdown())).contains("Provider: `gemini`", "Prompt ID: `diagnosis-agent`",
+                "Prompt version", "Tool schema ID: `diagnostic-tools`", "Tool schema version", "Expected root cause",
+                "Expected retry",
                 "RULE_EVIDENCE_REFERENCED", "VERSION_INCOMPATIBLE", "rootCauseCode=VERSION_INCOMPATIBLE")
                 .doesNotContain("reasoning_content");
     }

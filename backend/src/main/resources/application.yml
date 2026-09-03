@@ -1,6 +1,11 @@
 spring:
   application:
     name: iot-ota-operations-agent
+  ai:
+    # The provider adapter creates the real chat model only for an explicit Gemini run.
+    # Keeping Spring AI chat auto-configuration disabled preserves the controlled default.
+    model:
+      chat: none
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ota_operations}
     username: ${SPRING_DATASOURCE_USERNAME:ota}
@@ -21,11 +26,12 @@ spring:
 diagnosis:
   model:
     provider: ${DIAGNOSTIC_MODEL_PROVIDER:controlled}
-    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    name: ${DIAGNOSTIC_MODEL_NAME:gemini-3.1-flash-lite}
   evaluation:
     enabled: ${DIAGNOSTIC_EVALUATION_ENABLED:false}
     output-directory: ${DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY:${java.io.tmpdir}/iot-ota-evaluation}
 server:
+  forward-headers-strategy: framework
   servlet:
     session:
       timeout: 30m
@@ -45,6 +51,15 @@ demo:
   operator:
     username: ${DEMO_OPERATOR_USERNAME:demo-operator}
     password: ${DEMO_OPERATOR_PASSWORD:demo-password}
+  # The live quota is global to this backend process. Use one backend instance for the demo;
+  # multi-instance deployment requires a shared quota store before it is enabled.
+  live-diagnosis:
+    daily-limit: ${DEMO_LIVE_DIAGNOSIS_DAILY_LIMIT:20}
+    per-minute-limit: ${DEMO_LIVE_DIAGNOSIS_PER_MINUTE_LIMIT:3}
+  data-reset:
+    enabled: ${DEMO_DATA_RESET_ENABLED:true}
+    interval-ms: ${DEMO_DATA_RESET_INTERVAL_MS:86400000}
+    initial-delay-ms: ${DEMO_DATA_RESET_INITIAL_DELAY_MS:86400000}
 knowledge:
   embedding:
     model-id: intfloat/multilingual-e5-small

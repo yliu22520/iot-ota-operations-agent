@@ -3,7 +3,7 @@ package com.yliu22520.iotota.diagnosis;
 import java.util.List;
 import java.util.Objects;
 
-/** Runs the fixed 15-case suite against both release candidates before baseline selection. */
+/** Runs the fixed 15-case suite against each explicitly pinned candidate. */
 public final class DiagnosticCandidateEvaluationRunner {
 
     private final DiagnosticReleaseGate releaseGate;
@@ -20,7 +20,7 @@ public final class DiagnosticCandidateEvaluationRunner {
         Objects.requireNonNull(caseRunner, "caseRunner");
         return DiagnosticModelConfiguration.candidateModelIds().stream()
                 .map(modelId -> new DiagnosticEvaluationRunner(caseRunner, releaseGate)
-                        .run(DiagnosticModelConfiguration.deepSeekCandidate(modelId)))
+                        .run(DiagnosticModelConfiguration.evaluationCandidate(modelId)))
                 .toList();
     }
 }
