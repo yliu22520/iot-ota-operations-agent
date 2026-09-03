@@ -26,7 +26,7 @@ spring:
 diagnosis:
   model:
     provider: ${DIAGNOSTIC_MODEL_PROVIDER:controlled}
-    name: ${DIAGNOSTIC_MODEL_NAME:gemini-2.5-flash}
+    name: ${DIAGNOSTIC_MODEL_NAME:gemini-3.1-flash-lite}
   evaluation:
     enabled: ${DIAGNOSTIC_EVALUATION_ENABLED:false}
     output-directory: ${DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY:${java.io.tmpdir}/iot-ota-evaluation}

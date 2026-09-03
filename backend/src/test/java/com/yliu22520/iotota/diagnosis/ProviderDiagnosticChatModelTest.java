@@ -25,7 +25,7 @@ class ProviderDiagnosticChatModelTest {
         assertThat(explanation.text()).isEqualTo("The backend rule is authoritative.");
         assertThat(explanation.inputTokens()).isEqualTo(120);
         assertThat(explanation.outputTokens()).isEqualTo(8);
-        assertThat(model.modelId()).isEqualTo("gemini-2.5-flash");
+        assertThat(model.modelId()).isEqualTo("gemini-3.1-flash-lite");
         assertThat(client.request.prompt()).contains("MODEL_NOT_SUPPORTED", "compatibility:101", "HIGH");
         assertThat(client.request.prompt()).doesNotContain("reasoning_content");
     }

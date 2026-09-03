@@ -57,7 +57,7 @@ Vue 3、TypeScript 和 Vite 提供四个核心视图：
 ## 模型接入
 
 - 首轮真实模型评测使用 Gemini Developer API。
-- 评测候选固定为 `gemini-2.5-flash`，使用固定 Prompt、工具和 15 个评测案例执行回归。
+- 评测候选固定为 `gemini-3.1-flash-lite`，使用固定 Prompt、工具和 15 个评测案例执行回归。
 - Spring AI 使用原生 `spring-ai-starter-model-google-genai` 接入，不把 Gemini 凭证配置成 OpenAI 凭证。
 - API 密钥仅通过服务端环境变量 `GEMINI_API_KEY` 注入，不进入源码、配置文件、文档、日志或版本库。
 - 首轮评测使用固定的 provider-neutral reasoning budget（4096 tokens）；任何供应商内部 reasoning content 都不得进入持久化、日志或任何角色可见的输出。

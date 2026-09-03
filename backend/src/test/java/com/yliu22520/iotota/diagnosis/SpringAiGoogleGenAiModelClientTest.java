@@ -7,6 +7,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 
 import java.util.List;
 
@@ -45,10 +46,11 @@ class SpringAiGoogleGenAiModelClientTest {
         org.mockito.ArgumentCaptor<Prompt> prompt = org.mockito.ArgumentCaptor.forClass(Prompt.class);
         org.mockito.Mockito.verify(chatModel).call(prompt.capture());
         GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getValue().getOptions();
-        assertThat(options.getModel()).isEqualTo("gemini-2.5-flash");
-        assertThat(options.getThinkingBudget()).isEqualTo(4_096);
-        assertThat(options.getTemperature()).isEqualTo(0.0d);
-        assertThat(options.getTopP()).isEqualTo(1.0d);
+        assertThat(options.getModel()).isEqualTo("gemini-3.1-flash-lite");
+        assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
+        assertThat(options.getThinkingBudget()).isNull();
+        assertThat(options.getTemperature()).isNull();
+        assertThat(options.getTopP()).isNull();
         assertThat(options.getMaxOutputTokens()).isEqualTo(4096);
         assertThat(options.getInternalToolExecutionEnabled()).isFalse();
     }

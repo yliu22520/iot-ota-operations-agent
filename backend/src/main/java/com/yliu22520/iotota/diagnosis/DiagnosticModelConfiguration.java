@@ -16,7 +16,7 @@ public record DiagnosticModelConfiguration(String provider,
                              boolean automaticFallbackEnabled) {
 
     public static final String GEMINI_PROVIDER = "gemini";
-    public static final String RELEASE_MODEL_ID = "gemini-2.5-flash";
+    public static final String RELEASE_MODEL_ID = "gemini-3.1-flash-lite";
     public static final int HIGH_REASONING_BUDGET_TOKENS = 4_096;
 
     public DiagnosticModelConfiguration {
@@ -40,7 +40,7 @@ public record DiagnosticModelConfiguration(String provider,
                 RELEASE_MODEL_ID,
                 "HIGH",
                 HIGH_REASONING_BUDGET_TOKENS,
-                "diagnosis-agent-v1",
+                "diagnosis-agent-v2",
                 "diagnostic-tools-v1",
                 0.0d,
                 1.0d,

@@ -122,7 +122,7 @@ class LiveDiagnosisQuotaIT {
                         .session(firstSession))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.modelConfiguration.provider").value("gemini"))
-                .andExpect(jsonPath("$.modelConfiguration.modelId").value("gemini-2.5-flash"))
+                .andExpect(jsonPath("$.modelConfiguration.modelId").value("gemini-3.1-flash-lite"))
                 .andExpect(jsonPath("$.modelConfiguration.automaticFallbackEnabled").value(false))
                 .andExpect(jsonPath("$.tokenUsage.reported").value(false));
 

@@ -12,24 +12,24 @@ class DiagnosisConfigurationTest {
         DiagnosticModelConfiguration configuration = new DiagnosisConfiguration()
                 .diagnosticModelConfiguration("gemini");
 
-        assertThat(configuration.modelId()).isEqualTo("gemini-2.5-flash");
+        assertThat(configuration.modelId()).isEqualTo("gemini-3.1-flash-lite");
         assertThat(configuration.supportsMultimodalInput()).isFalse();
     }
 
     @Test
     void geminiRuntimeProviderRejectsAnUnverifiedModelName() {
         assertThatThrownBy(() -> new DiagnosisConfiguration()
-                .diagnosticModelConfiguration("gemini", "gemini-2.5-flash-lite"))
+                .diagnosticModelConfiguration("gemini", "gemini-3.6-flash"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("gemini-2.5-flash");
+                .hasMessageContaining("gemini-3.1-flash-lite");
     }
 
     @Test
     void geminiRuntimeProviderNormalizesCaseAndWhitespace() {
         DiagnosticModelConfiguration configuration = new DiagnosisConfiguration()
-                .diagnosticModelConfiguration(" GEMINI ", " gemini-2.5-flash ");
+                .diagnosticModelConfiguration(" GEMINI ", " gemini-3.1-flash-lite ");
 
         assertThat(configuration.provider()).isEqualTo("gemini");
-        assertThat(configuration.modelId()).isEqualTo("gemini-2.5-flash");
+        assertThat(configuration.modelId()).isEqualTo("gemini-3.1-flash-lite");
     }
 }

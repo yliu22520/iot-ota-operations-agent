@@ -66,7 +66,7 @@ jobs:
     env:
       RUN_REAL_MODEL_EVALUATION: 'true'
       DIAGNOSTIC_MODEL_PROVIDER: gemini
-      DIAGNOSTIC_MODEL_NAME: gemini-2.5-flash
+      DIAGNOSTIC_MODEL_NAME: gemini-3.1-flash-lite
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY: ${{ github.workspace }}/backend/target/real-model-evaluation
     steps:

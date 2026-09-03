@@ -3,7 +3,6 @@ package com.yliu22520.iotota.diagnosis;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.beans.factory.DisposableBean;
 
 import java.util.Objects;
@@ -27,14 +26,7 @@ public final class SpringAiGoogleGenAiModelClient implements DiagnosticModelClie
     public DiagnosticModelResponse complete(DiagnosticModelRequest request) {
         try {
             DiagnosticModelConfiguration configuration = request.configuration();
-            GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-                    .model(configuration.modelId())
-                    .thinkingBudget(configuration.reasoningBudgetTokens())
-                    .temperature(configuration.temperature())
-                    .topP(configuration.topP())
-                    .maxOutputTokens(configuration.limits().maxOutputTokens())
-                    .internalToolExecutionEnabled(false)
-                    .build();
+            var options = GoogleGenAiDiagnosticModelOptions.from(configuration);
             ChatResponse response = chatModel.call(new Prompt(request.prompt(), options));
             if (response == null || response.getResult() == null || response.getResult().getOutput() == null
                     || response.getResult().getOutput().getText() == null

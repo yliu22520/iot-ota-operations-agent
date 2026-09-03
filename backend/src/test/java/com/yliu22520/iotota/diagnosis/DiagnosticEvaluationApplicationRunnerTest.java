@@ -41,8 +41,8 @@ class DiagnosticEvaluationApplicationRunnerTest {
         try (Stream<Path> files = Files.list(outputDirectory)) {
             assertThat(files.map(path -> path.getFileName().toString()).toList())
                     .containsExactlyInAnyOrder(
-                             "gemini_gemini-2.5-flash_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_reasoningBudgetTokens_4096_temperature_0.0_topP_1.0.json",
-                             "gemini_gemini-2.5-flash_HIGH_diagnosis-agent-v1_diagnostic-tools-v1_reasoningBudgetTokens_4096_temperature_0.0_topP_1.0.md");
+                             "gemini_gemini-3.1-flash-lite_HIGH_diagnosis-agent-v2_diagnostic-tools-v1_reasoningBudgetTokens_4096_temperature_0.0_topP_1.0.json",
+                             "gemini_gemini-3.1-flash-lite_HIGH_diagnosis-agent-v2_diagnostic-tools-v1_reasoningBudgetTokens_4096_temperature_0.0_topP_1.0.md");
         }
     }
 }

@@ -125,17 +125,17 @@ CREATED
 运行时 release baseline 固定为：
 
 - Provider：`gemini`
-- Model：`gemini-2.5-flash`
+- Model：`gemini-3.1-flash-lite`
 - Reasoning tier：`HIGH`
 - Reasoning budget：`4096` tokens
-- Prompt：`diagnosis-agent-v1`
+- Prompt：`diagnosis-agent-v2`
 - Tool schema：`diagnostic-tools-v1`
 - Temperature：`0.0`
 - Top-p：`1.0`
 - Automatic fallback：关闭
 - 输入边界：text-only
 
-运行时只允许使用固定的 `gemini-2.5-flash` 基线；当前评测候选列表也只包含该基线，不提供给浏览器作为运行时切换项。
+运行时只允许使用固定的 `gemini-3.1-flash-lite` 基线；当前评测候选列表也只包含该基线，不提供给浏览器作为运行时切换项。
 
 真实模型评测使用固定 15-case suite，每个候选每个 case 跑 3 次。Release gate 要求：
 
@@ -324,7 +324,7 @@ PR CI 还会校验 Compose/Caddy 配置，并扫描构建后的前端 bundle，�
 3. 要求仓库 Actions Secret 中存在真实 `GEMINI_API_KEY`。
 4. 运行固定 Gemini 基线的真实 release gate。
 5. 上传安全评测报告。
-6. 固定 runtime baseline（当前 `gemini-2.5-flash`）未通过 release gate，或其安全 case / safety blocker 失败，workflow 失败。
+6. 固定 runtime baseline（当前 `gemini-3.1-flash-lite`）未通过 release gate，或其安全 case / safety blocker 失败，workflow 失败。
 
 本地也可显式运行真实 gate：
 
@@ -332,7 +332,7 @@ PR CI 还会校验 Compose/Caddy 配置，并扫描构建后的前端 bundle，�
 export RUN_REAL_MODEL_EVALUATION=true
 export GEMINI_API_KEY='set-in-shell-only'
 export DIAGNOSTIC_MODEL_PROVIDER=gemini
-export DIAGNOSTIC_MODEL_NAME=gemini-2.5-flash
+export DIAGNOSTIC_MODEL_NAME=gemini-3.1-flash-lite
 export DIAGNOSTIC_EVALUATION_OUTPUT_DIRECTORY='backend/target/real-model-evaluation'
 
 mvn -f backend/pom.xml -Dtest=RealModelReleaseGateTest test

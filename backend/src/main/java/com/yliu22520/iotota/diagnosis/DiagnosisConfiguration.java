@@ -20,7 +20,7 @@ public class DiagnosisConfiguration {
     @Bean
     DiagnosticModelConfiguration diagnosticModelConfiguration(
             @Value("${diagnosis.model.provider:controlled}") String provider,
-            @Value("${diagnosis.model.name:gemini-2.5-flash}") String modelName) {
+            @Value("${diagnosis.model.name:gemini-3.1-flash-lite}") String modelName) {
         return buildDiagnosticModelConfiguration(provider, modelName);
     }
 

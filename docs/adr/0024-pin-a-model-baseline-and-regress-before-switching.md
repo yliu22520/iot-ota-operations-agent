@@ -4,7 +4,7 @@
 
 首次选择模型时，用相同 Prompt、工具和 15 个故障案例评测可负担的候选模型，依次按安全门槛、结构化输出成功率、诊断命中率、成本和耗时确定默认模型。
 
-Issue #12 将真实 Provider 迁移到官方 Gemini Developer API。首轮正式基线固定为 `gemini-2.5-flash`，Provider 为 `gemini`，Reasoning tier 为 `High`；V1 不向用户提供思考模式开关。模型、Provider 或关键推理配置的任何调整均视为模型配置变更，需要重新运行完整回归。当前候选列表只包含该固定基线，避免把未经评测的模型宣称为可替换候选。
+Issue #12 将真实 Provider 迁移到官方 Gemini Developer API。正式基线固定为 `gemini-3.1-flash-lite`，Provider 为 `gemini`，Reasoning tier 为 `High`；V1 不向用户提供思考模式开关。Gemini 3.x 请求使用 `thinkingLevel=HIGH`，不发送已被当前 API 淘汰的 `temperature`/`topP`；provider-neutral 配置仍记录固定采样值与 4,096 reasoning budget 作为遥测。模型、Provider 或关键推理配置的任何调整均视为模型配置变更，需要重新运行完整回归。当前候选列表只包含该固定基线，避免把未经评测的模型宣称为可替换候选。
 
 候选模型通过安全门槛后，按结构化输出 20%、故障原因 30%、证据与引用 25%、工具纪律 15%、延迟和成本 10% 计算比较分数。
 

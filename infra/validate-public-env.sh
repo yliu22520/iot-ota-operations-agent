@@ -67,7 +67,7 @@ esac
 
 [ "$(value_of DIAGNOSTIC_MODEL_PROVIDER)" = "gemini" ] \
   || fail "DIAGNOSTIC_MODEL_PROVIDER must be gemini for the logged-in live public demo"
-[ "$(value_of DIAGNOSTIC_MODEL_NAME)" = "gemini-2.5-flash" ] \
+[ "$(value_of DIAGNOSTIC_MODEL_NAME)" = "gemini-3.1-flash-lite" ] \
   || fail "DIAGNOSTIC_MODEL_NAME must match the pinned release baseline"
 
 api_key="$(value_of GEMINI_API_KEY)"

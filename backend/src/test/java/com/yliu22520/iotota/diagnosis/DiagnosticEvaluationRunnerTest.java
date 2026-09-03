@@ -24,7 +24,7 @@ class DiagnosticEvaluationRunnerTest {
         assertThat(calls).hasValue(45);
         assertThat(report.observations()).hasSize(45);
         assertThat(report.provider()).isEqualTo("gemini");
-        assertThat(report.modelId()).isEqualTo("gemini-2.5-flash");
+        assertThat(report.modelId()).isEqualTo("gemini-3.1-flash-lite");
         assertThat(report.reasoningTier()).isEqualTo("HIGH");
         assertThat(report.reasoningBudgetTokens()).isEqualTo(4_096);
         assertThat(report.releaseDecision().releaseAllowed()).isTrue();

@@ -24,8 +24,8 @@ class DiagnosticCandidateEvaluationRunnerTest {
         List<DiagnosticEvaluationReport> reports = new DiagnosticCandidateEvaluationRunner().run(caseRunner);
 
         assertThat(reports).extracting(DiagnosticEvaluationReport::modelId)
-                .containsExactly("gemini-2.5-flash");
+                .containsExactly("gemini-3.1-flash-lite");
         assertThat(calls).hasValue(45);
-        assertThat(modelIds).containsOnly("gemini-2.5-flash");
+        assertThat(modelIds).containsOnly("gemini-3.1-flash-lite");
     }
 }
